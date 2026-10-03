@@ -5,8 +5,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev"
+    "prisma:generate": "npx prisma generate",
+    "prisma:migrate": "npx prisma migrate dev"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0"
