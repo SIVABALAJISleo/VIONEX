@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Compass, Film, Radio, History, Clock, ThumbsUp, FolderPlay, Settings, HelpCircle } from 'lucide-react';
+import { Home, Compass, Film, Radio, History, Clock, ThumbsUp, ListVideo, Settings, HelpCircle } from 'lucide-react';
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -17,7 +17,7 @@ export default function Sidebar() {
     { label: 'History', href: '/history', icon: History },
     { label: 'Watch Later', href: '/watch-later', icon: Clock },
     { label: 'Liked Videos', href: '/liked', icon: ThumbsUp },
-    { label: 'Playlists', href: '/playlists', icon: FolderPlay },
+    { label: 'Playlists', href: '/playlists', icon: ListVideo },
     { type: 'divider' },
     { label: 'Settings', href: '/settings', icon: Settings },
     { label: 'Help & Feedback', href: '/help', icon: HelpCircle }

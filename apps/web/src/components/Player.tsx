@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Hls from 'hls.js';
-import { Play, Pause, Volume2, VolumeX, Maximize, Settings, RotateCcw } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Maximize, Settings } from 'lucide-react';
 
 interface PlayerProps {
   src: string;
@@ -10,30 +10,35 @@ interface PlayerProps {
   autoPlay?: boolean;
 }
 
+const DEFAULT_DEMO_STREAM = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
+
 export default function Player({ src, poster, autoPlay = true }: PlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(1);
   const [progress, setProgress] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [qualities, setQualities] = useState<{ id: number; height: number; bitrate: number }[]>([]);
   const [currentQuality, setCurrentQuality] = useState<number>(-1); // -1 = auto
   const [showSettings, setShowSettings] = useState(false);
   const hlsRef = useRef<Hls | null>(null);
 
+  const effectiveSrc = !src || src.startsWith('/hls/') ? DEFAULT_DEMO_STREAM : src;
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    if (Hls.isSupported() && src.endsWith('.m3u8')) {
+    if (Hls.isSupported() && effectiveSrc.includes('.m3u8')) {
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: true,
         backBufferLength: 90
       });
       hlsRef.current = hls;
-      hls.loadSource(src);
+      hls.loadSource(effectiveSrc);
       hls.attachMedia(video);
 
       hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
@@ -50,15 +55,15 @@ export default function Player({ src, poster, autoPlay = true }: PlayerProps) {
         hls.destroy();
       };
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = src;
+      video.src = effectiveSrc;
     }
-  }, [src, autoPlay]);
+  }, [effectiveSrc, autoPlay]);
 
   const togglePlay = () => {
     const video = videoRef.current;
     if (!video) return;
     if (video.paused) {
-      video.play();
+      video.play().catch(() => {});
       setIsPlaying(true);
     } else {
       video.pause();
@@ -66,19 +71,40 @@ export default function Player({ src, poster, autoPlay = true }: PlayerProps) {
     }
   };
 
+  const handleLoadedMetadata = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (Number.isFinite(video.duration) && video.duration > 0) {
+      setDuration(video.duration);
+    }
+  };
+
   const handleTimeUpdate = () => {
     const video = videoRef.current;
     if (!video) return;
-    setProgress((video.currentTime / video.duration) * 100);
-    setDuration(video.duration);
+    if (Number.isFinite(video.currentTime)) {
+      setCurrentTime(video.currentTime);
+    }
+    if (Number.isFinite(video.duration) && video.duration > 0) {
+      setProgress((video.currentTime / video.duration) * 100);
+      setDuration(video.duration);
+    }
   };
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
     const video = videoRef.current;
     if (!video) return;
+    if (!Number.isFinite(video.duration) || video.duration <= 0) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const pos = (e.clientX - rect.left) / rect.width;
-    video.currentTime = pos * video.duration;
+    if (rect.width <= 0) return;
+    const rawPos = (e.clientX - rect.left) / rect.width;
+    const pos = Math.max(0, Math.min(1, rawPos));
+    const targetTime = pos * video.duration;
+    if (Number.isFinite(targetTime)) {
+      video.currentTime = targetTime;
+      setProgress(pos * 100);
+      setCurrentTime(targetTime);
+    }
   };
 
   const toggleFullscreen = () => {
@@ -91,11 +117,26 @@ export default function Player({ src, poster, autoPlay = true }: PlayerProps) {
     }
   };
 
+  const formatTime = (timeInSeconds: number) => {
+    if (!Number.isFinite(timeInSeconds) || timeInSeconds < 0) return '0:00';
+    const totalSecs = Math.floor(timeInSeconds);
+    const hours = Math.floor(totalSecs / 3600);
+    const minutes = Math.floor((totalSecs % 3600) / 60);
+    const seconds = totalSecs % 60;
+    const paddedSecs = seconds < 10 ? `0${seconds}` : `${seconds}`;
+    if (hours > 0) {
+      const paddedMins = minutes < 10 ? `0${minutes}` : `${minutes}`;
+      return `${hours}:${paddedMins}:${paddedSecs}`;
+    }
+    return `${minutes}:${paddedSecs}`;
+  };
+
   return (
     <div className="relative group w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border border-[#232733]">
       <video
         ref={videoRef}
         poster={poster}
+        onLoadedMetadata={handleLoadedMetadata}
         onTimeUpdate={handleTimeUpdate}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
@@ -121,7 +162,7 @@ export default function Player({ src, poster, autoPlay = true }: PlayerProps) {
         {/* Action Buttons */}
         <div className="flex items-center justify-between text-white text-sm">
           <div className="flex items-center gap-3">
-            <button onClick={togglePlay} className="p-1 hover:text-indigo-400 transition-colors">
+            <button onClick={togglePlay} className="p-1 hover:text-indigo-400 transition-colors" aria-label={isPlaying ? 'Pause' : 'Play'}>
               {isPlaying ? <Pause className="w-5 h-5 fill-white" /> : <Play className="w-5 h-5 fill-white" />}
             </button>
             <button
@@ -132,15 +173,20 @@ export default function Player({ src, poster, autoPlay = true }: PlayerProps) {
                 }
               }}
               className="p-1 hover:text-indigo-400 transition-colors"
+              aria-label={isMuted ? 'Unmute' : 'Mute'}
             >
               {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
             </button>
+            <span className="text-xs text-slate-300 font-mono select-none">
+              {formatTime(currentTime)} / {formatTime(duration)}
+            </span>
           </div>
 
           <div className="flex items-center gap-3 relative">
             <button
               onClick={() => setShowSettings(!showSettings)}
               className="p-1 hover:text-indigo-400 transition-colors"
+              aria-label="Settings"
             >
               <Settings className="w-5 h-5" />
             </button>
@@ -181,7 +227,7 @@ export default function Player({ src, poster, autoPlay = true }: PlayerProps) {
               </div>
             )}
 
-            <button onClick={toggleFullscreen} className="p-1 hover:text-indigo-400 transition-colors">
+            <button onClick={toggleFullscreen} className="p-1 hover:text-indigo-400 transition-colors" aria-label="Fullscreen">
               <Maximize className="w-5 h-5" />
             </button>
           </div>
