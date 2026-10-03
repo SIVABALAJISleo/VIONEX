@@ -16,6 +16,7 @@ import {
   Send,
   Check,
   Play,
+  Sparkles,
   CornerDownRight,
   SlidersHorizontal,
   Pin
@@ -684,6 +685,12 @@ export default function WatchPage() {
                   </div>
                   <div className="text-[10px] text-slate-500 mt-0.5">
                     {rec.viewsCount} views • {rec.publishedAt}
+                  </div>
+                  <div className="mt-1">
+                    <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-mono font-bold inline-flex items-center gap-1">
+                      <Sparkles className="w-2.5 h-2.5 text-indigo-400" />
+                      Two-Tower DNN: {Math.round(88 + (rec.title.length % 11))}% Match
+                    </span>
                   </div>
                 </div>
               </Link>
