@@ -15,12 +15,22 @@ import {
   Plus,
   Play,
   TrendingUp,
-  Tag
+  Tag,
+  ShieldAlert,
+  MessageSquare,
+  Users,
+  Check,
+  Send,
+  PieChart,
+  Clock,
+  Sparkles,
+  Heart,
+  Pin
 } from 'lucide-react';
 import { getStoredVideos, saveCustomVideo, VideoItem } from '@/lib/data';
 
 export default function CreatorStudioPage() {
-  const [activeTab, setActiveTab] = useState<'content' | 'upload' | 'analytics'>('content');
+  const [activeTab, setActiveTab] = useState<'content' | 'upload' | 'analytics' | 'comments' | 'copyright' | 'community'>('content');
   const [uploadStep, setUploadStep] = useState(1);
   const [videoTitle, setVideoTitle] = useState('');
   const [videoDesc, setVideoDesc] = useState('');
@@ -28,9 +38,66 @@ export default function CreatorStudioPage() {
   const [videoVisibility, setVideoVisibility] = useState('PUBLIC');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [encodingStatus, setEncodingStatus] = useState<string>('Idle');
   const [publishedVideoId, setPublishedVideoId] = useState('');
 
   const [videos, setVideos] = useState<VideoItem[]>([]);
+
+  // Studio Comments State
+  const [studioComments, setStudioComments] = useState([
+    {
+      id: 'sc-1',
+      videoTitle: 'Next-Gen Video Infrastructure',
+      author: 'Maya Lin',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=100&auto=format&fit=crop',
+      text: 'Are you planning to support AV1 video encoding alongside H.264?',
+      timestamp: '2 hours ago',
+      hearted: false,
+      pinned: false
+    },
+    {
+      id: 'sc-2',
+      videoTitle: 'Live Stream Ingestion & DVR Architecture',
+      author: 'David Kumar',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=100&auto=format&fit=crop',
+      text: 'The 2-second low latency HLS segmenting was flawless during the load test.',
+      timestamp: '5 hours ago',
+      hearted: true,
+      pinned: true
+    }
+  ]);
+
+  // Copyright Claims State
+  const [copyrightClaims, setCopyrightClaims] = useState([
+    {
+      id: 'cl-1',
+      videoTitle: 'Ambient Soundtrack Test Stream',
+      claimant: 'AudioNetwork Soundscapes LLC',
+      timestampClaimed: '0:14 - 1:02',
+      status: 'Claimed (Monetization shared)',
+      disputed: false
+    }
+  ]);
+  const [disputeModalOpen, setDisputeModalOpen] = useState(false);
+  const [disputeReason, setDisputeReason] = useState('');
+  const [activeClaimId, setActiveClaimId] = useState<string | null>(null);
+
+  // Community Posts State
+  const [communityPosts, setCommunityPosts] = useState([
+    {
+      id: 'cp-1',
+      content: 'We just rolled out real-time ABR and WebRTC peer delivery! Which feature should we benchmark next?',
+      pollOptions: [
+        { label: '4K 60FPS Transcoding Pipeline', votes: 142 },
+        { label: 'End-to-End Encrypted Private Streams', votes: 98 },
+        { label: 'Dynamic Multi-Track Audio Dubbing', votes: 64 }
+      ],
+      totalVotes: 304,
+      publishedAt: 'Yesterday'
+    }
+  ]);
+  const [newPostContent, setNewPostContent] = useState('');
+  const [pollOptionsInput, setPollOptionsInput] = useState(['', '']);
 
   useEffect(() => {
     setVideos(getStoredVideos());
@@ -38,13 +105,18 @@ export default function CreatorStudioPage() {
 
   const simulateUpload = () => {
     setIsUploading(true);
+    setEncodingStatus('Uploading chunks to quarantine storage...');
     let p = 0;
     const interval = setInterval(() => {
-      p += 25;
+      p += 20;
       setUploadProgress(p);
+      if (p === 60) {
+        setEncodingStatus('Assembling multipart chunks & FFmpeg transcoding (1080p, 720p, 480p)...');
+      }
       if (p >= 100) {
         clearInterval(interval);
         setIsUploading(false);
+        setEncodingStatus('Transcoding complete! HLS manifest ready.');
         setUploadStep(2);
       }
     }, 300);
@@ -55,285 +127,247 @@ export default function CreatorStudioPage() {
     const newId = 'vid-custom-' + Date.now();
     const newVideo: VideoItem = {
       id: newId,
-      title: videoTitle.trim() || 'My New Uploaded Video',
+      title: videoTitle.trim() || 'My New Studio Upload',
       description: videoDesc.trim() || 'Uploaded through VIONEX Creator Studio.',
       thumbnailUrl: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1280&auto=format&fit=crop',
-      duration: 720,
-      durationFormatted: '12:00',
+      duration: 345,
+      durationFormatted: '5:45',
       videoUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
       channel: {
+        name: 'Creator Studio Pro',
         handle: 'creator',
-        name: 'Creator Studio',
         avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop',
-        isVerified: true,
-        subscribers: '10.5K subscribers',
-        subscribersCount: 10500
+        isVerified: true
       },
-      viewsCount: '1 view',
-      viewsNumeric: 1,
-      likesCount: 1,
+      viewsCount: '0',
+      viewsNumeric: 0,
+      likesCount: 0,
       publishedAt: 'Just now',
       category: videoCategory,
-      tags: ['New', videoCategory],
+      tags: ['creator', 'studio', 'vionex'],
       commentsCount: 0
     };
 
     saveCustomVideo(newVideo);
-    setVideos([newVideo, ...videos]);
+    setVideos(getStoredVideos());
     setPublishedVideoId(newId);
     setUploadStep(3);
   };
 
-  const handleDeleteVideo = (id: string) => {
-    if (confirm('Delete this video permanently?')) {
-      setVideos((prev) => prev.filter((v) => v.id !== id));
-    }
+  const handleHeartComment = (id: string) => {
+    setStudioComments(
+      studioComments.map((c) => (c.id === id ? { ...c, hearted: !c.hearted } : c))
+    );
+  };
+
+  const handlePinComment = (id: string) => {
+    setStudioComments(
+      studioComments.map((c) => (c.id === id ? { ...c, pinned: !c.pinned } : c))
+    );
+  };
+
+  const handleDisputeSubmit = () => {
+    if (!activeClaimId) return;
+    setCopyrightClaims(
+      copyrightClaims.map((cl) =>
+        cl.id === activeClaimId ? { ...cl, status: 'Dispute submitted (Pending review)', disputed: true } : cl
+      )
+    );
+    setDisputeModalOpen(false);
+    setDisputeReason('');
+  };
+
+  const handleCreatePost = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPostContent.trim()) return;
+
+    const validPollOptions = pollOptionsInput
+      .filter((opt) => opt.trim().length > 0)
+      .map((opt) => ({ label: opt.trim(), votes: 0 }));
+
+    const post = {
+      id: 'cp-' + Date.now(),
+      content: newPostContent.trim(),
+      pollOptions: validPollOptions,
+      totalVotes: 0,
+      publishedAt: 'Just now'
+    };
+
+    setCommunityPosts([post, ...communityPosts]);
+    setNewPostContent('');
+    setPollOptionsInput(['', '']);
   };
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-8">
       {/* Studio Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#232733] pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#232733] pb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Video className="w-6 h-6 text-indigo-400" />
-            <span>Creator Studio</span>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-3">
+            <Video className="w-8 h-8 text-indigo-400" />
+            VIONEX Creator Studio
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Manage channel content, monitor performance, and publish new videos
+          <p className="text-sm text-slate-400 mt-1">
+            Manage channel content, real-time analytics, comments moderation, and copyright compliance.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
-            Channel Standing: Good
-          </span>
-          <button
-            onClick={() => {
-              setActiveTab('upload');
-              setUploadStep(1);
-            }}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/20 transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Upload Video</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Analytics Summary Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-[#14161d] border border-[#232733] rounded-2xl p-4 space-y-1">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-semibold">
-            <span>Views (28 Days)</span>
-            <BarChart3 className="w-4 h-4 text-indigo-400" />
-          </div>
-          <div className="text-2xl font-extrabold text-white">462,800</div>
-          <div className="text-xs text-emerald-400 font-semibold">+18.4% vs last period</div>
-        </div>
-
-        <div className="bg-[#14161d] border border-[#232733] rounded-2xl p-4 space-y-1">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-semibold">
-            <span>Watch Time (Hours)</span>
-            <Video className="w-4 h-4 text-pink-400" />
-          </div>
-          <div className="text-2xl font-extrabold text-white">12,450</div>
-          <div className="text-xs text-emerald-400 font-semibold">+22.1% vs last period</div>
-        </div>
-
-        <div className="bg-[#14161d] border border-[#232733] rounded-2xl p-4 space-y-1">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-semibold">
-            <span>Subscribers</span>
-            <Layers className="w-4 h-4 text-violet-400" />
-          </div>
-          <div className="text-2xl font-extrabold text-white">+3,820</div>
-          <div className="text-xs text-emerald-400 font-semibold">+9.5% vs last period</div>
-        </div>
-
-        <div className="bg-[#14161d] border border-[#232733] rounded-2xl p-4 space-y-1">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-semibold">
-            <span>Estimated Revenue</span>
-            <DollarSign className="w-4 h-4 text-amber-400" />
-          </div>
-          <div className="text-2xl font-extrabold text-white">$1,845.20</div>
-          <div className="text-xs text-emerald-400 font-semibold">RPM: $3.98 • 4.2% CTR</div>
-        </div>
-      </div>
-
-      {/* Navigation Tabs */}
-      <div className="flex items-center gap-6 border-b border-[#232733] text-sm font-semibold">
         <button
-          onClick={() => setActiveTab('content')}
-          className={`pb-3 relative transition-colors ${
-            activeTab === 'content' ? 'text-white' : 'text-slate-400 hover:text-white'
-          }`}
+          onClick={() => {
+            setActiveTab('upload');
+            setUploadStep(1);
+            setUploadProgress(0);
+          }}
+          className="px-5 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 transition-transform hover:scale-105"
         >
-          Channel Content ({videos.length})
-          {activeTab === 'content' && (
-            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 rounded-full" />
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab('upload')}
-          className={`pb-3 relative transition-colors ${
-            activeTab === 'upload' ? 'text-white' : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          Upload Wizard
-          {activeTab === 'upload' && (
-            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 rounded-full" />
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab('analytics')}
-          className={`pb-3 relative transition-colors ${
-            activeTab === 'analytics' ? 'text-white' : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          Analytics & Retention
-          {activeTab === 'analytics' && (
-            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 rounded-full" />
-          )}
+          <Plus className="w-4 h-4" />
+          <span>Upload Video</span>
         </button>
       </div>
 
-      {/* Content Tab: Video Management Table */}
+      {/* Studio Navigation Tabs */}
+      <div className="flex items-center gap-2 overflow-x-auto border-b border-[#232733] pb-2 text-xs font-bold scrollbar-none">
+        {[
+          { id: 'content', label: 'Channel Content', icon: Layers },
+          { id: 'upload', label: 'Upload & Transcode', icon: UploadCloud },
+          { id: 'analytics', label: 'Analytics Dashboard', icon: BarChart3 },
+          { id: 'comments', label: 'Comments Moderation', icon: MessageSquare },
+          { id: 'copyright', label: 'Copyright & Claims', icon: ShieldAlert },
+          { id: 'community', label: 'Community Posts', icon: Users }
+        ].map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap ${
+                activeTab === tab.id
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-white hover:bg-[#14161d]'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Tab 1: Channel Content */}
       {activeTab === 'content' && (
-        <div className="bg-[#14161d] border border-[#232733] rounded-3xl overflow-hidden shadow-xl">
-          <div className="p-4 border-b border-[#232733] flex items-center justify-between">
-            <h2 className="font-bold text-sm text-white">Video Catalog</h2>
-            <span className="text-xs text-slate-400">Showing {videos.length} videos</span>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-white">Your Published Videos ({videos.length})</h2>
+            <span className="text-xs text-slate-400 font-mono">Real-time status: Synced</span>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-[#181a24] text-slate-400 border-b border-[#232733] uppercase tracking-wider text-[11px]">
-                <tr>
-                  <th className="py-3 px-4">Video</th>
-                  <th className="py-3 px-4">Visibility</th>
-                  <th className="py-3 px-4">Category</th>
-                  <th className="py-3 px-4">Date</th>
-                  <th className="py-3 px-4">Views</th>
-                  <th className="py-3 px-4">Likes</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#232733]">
-                {videos.map((v) => (
-                  <tr key={v.id} className="hover:bg-[#181a24]/50 transition-colors">
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-24 aspect-video rounded-lg overflow-hidden bg-black shrink-0 relative">
-                          <img src={v.thumbnailUrl} alt={v.title} className="w-full h-full object-cover" />
-                          <span className="absolute bottom-1 right-1 px-1 rounded bg-black/80 text-[9px] font-mono text-white">
-                            {v.durationFormatted}
-                          </span>
-                        </div>
-                        <div className="min-w-0 max-w-xs">
-                          <Link
-                            href={`/watch/${v.id}`}
-                            className="font-bold text-white hover:text-indigo-400 transition-colors line-clamp-1"
-                          >
-                            {v.title}
-                          </Link>
-                          <p className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">{v.description}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold text-[10px]">
-                        Public
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-slate-300 font-medium">
-                      {v.category}
-                    </td>
-                    <td className="py-3 px-4 text-slate-400">
-                      {v.publishedAt}
-                    </td>
-                    <td className="py-3 px-4 text-white font-mono font-medium">
-                      {v.viewsCount}
-                    </td>
-                    <td className="py-3 px-4 text-white font-mono font-medium">
-                      {v.likesCount}
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Link
-                          href={`/watch/${v.id}`}
-                          title="Watch Video"
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-indigo-600/10 transition-colors"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </Link>
-                        <button
-                          onClick={() => handleDeleteVideo(v.id)}
-                          title="Delete"
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
+          <div className="bg-[#111318] border border-[#232733] rounded-2xl overflow-hidden shadow-xl">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-[#161922] text-slate-400 font-semibold border-b border-[#232733]">
+                  <tr>
+                    <th className="p-4">Video</th>
+                    <th className="p-4">Visibility</th>
+                    <th className="p-4">Date</th>
+                    <th className="p-4">Views</th>
+                    <th className="p-4">Likes</th>
+                    <th className="p-4 text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-[#1e2230] text-slate-200">
+                  {videos.map((vid) => (
+                    <tr key={vid.id} className="hover:bg-[#151821] transition-colors">
+                      <td className="p-4 flex items-center gap-3">
+                        <img
+                          src={vid.thumbnailUrl}
+                          alt={vid.title}
+                          className="w-20 aspect-video rounded-lg object-cover border border-[#2e3444] shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <span className="font-bold text-white truncate block">{vid.title}</span>
+                          <span className="text-[11px] text-slate-400">{vid.durationFormatted} • {vid.category}</span>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-mono font-bold text-[10px]">
+                          Public
+                        </span>
+                      </td>
+                      <td className="p-4 text-slate-400">{vid.publishedAt}</td>
+                      <td className="p-4 font-mono">{vid.viewsCount}</td>
+                      <td className="p-4 font-mono">{vid.likesCount}</td>
+                      <td className="p-4 text-right">
+                        <Link
+                          href={`/watch/${vid.id}`}
+                          className="p-2 rounded-lg bg-[#1f232e] hover:bg-indigo-600 text-slate-300 hover:text-white inline-flex items-center gap-1 transition-colors"
+                        >
+                          <Play className="w-3.5 h-3.5" />
+                          <span>Watch</span>
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Upload Wizard Tab */}
+      {/* Tab 2: Upload & Transcode Flow */}
       {activeTab === 'upload' && (
-        <div className="bg-[#14161d] border border-[#232733] rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl max-w-3xl mx-auto">
-          <div className="flex items-center justify-between border-b border-[#232733] pb-4">
-            <h2 className="text-lg font-bold text-white">Video Ingestion Wizard</h2>
-            <span className="text-xs text-slate-400">Step {uploadStep} of 3</span>
-          </div>
-
+        <div className="max-w-2xl mx-auto bg-[#14161d] border border-[#2e3444] rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
           {uploadStep === 1 && (
-            <div className="border-2 border-dashed border-[#2e3444] rounded-2xl p-12 flex flex-col items-center justify-center text-center space-y-4 hover:border-indigo-500 transition-colors">
-              <div className="w-16 h-16 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shadow-lg">
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 rounded-full bg-indigo-600/20 text-indigo-400 flex items-center justify-center mx-auto">
                 <UploadCloud className="w-8 h-8" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-white">Drag and drop video files to upload</p>
-                <p className="text-xs text-slate-400 mt-1">Supports MP4, WebM, MKV, MOV (Up to 10GB)</p>
+                <h3 className="text-lg font-bold text-white">Select Video File to Upload</h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Supports MP4, MOV, MKV, WebM up to 100GB. Multi-bitrate HLS packaging included.
+                </p>
               </div>
-              {isUploading ? (
-                <div className="w-72 space-y-2">
-                  <div className="w-full bg-[#1f232e] h-2.5 rounded-full overflow-hidden">
+
+              {!isUploading ? (
+                <button
+                  onClick={simulateUpload}
+                  className="px-6 py-3 rounded-full bg-indigo-600 hover:bg-indigo-500 font-bold text-xs text-white shadow-lg shadow-indigo-600/30 transition-all hover:scale-105"
+                >
+                  Choose File & Begin Transcode
+                </button>
+              ) : (
+                <div className="space-y-3 pt-4">
+                  <div className="flex justify-between text-xs font-mono text-slate-300">
+                    <span>{encodingStatus}</span>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
                     <div
-                      className="bg-gradient-to-r from-indigo-500 to-pink-500 h-full transition-all duration-300"
+                      className="h-full bg-indigo-600 transition-all duration-300 rounded-full"
                       style={{ width: `${uploadProgress}%` }}
                     />
                   </div>
-                  <span className="text-xs font-semibold text-indigo-400">
-                    Uploading Chunks: {uploadProgress}%
-                  </span>
                 </div>
-              ) : (
-                <button
-                  onClick={simulateUpload}
-                  className="px-6 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-colors shadow-lg shadow-indigo-600/20"
-                >
-                  Select File from Computer
-                </button>
               )}
             </div>
           )}
 
           {uploadStep === 2 && (
             <form onSubmit={handlePublish} className="space-y-4">
+              <h3 className="text-lg font-bold text-white border-b border-[#232733] pb-2">
+                Video Details & Metadata
+              </h3>
+
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-300">Video Title *</label>
+                <label className="text-xs font-semibold text-slate-300">Title</label>
                 <input
                   type="text"
                   required
-                  placeholder="Enter a compelling title..."
+                  placeholder="Add a title that catches viewers' attention"
                   value={videoTitle}
                   onChange={(e) => setVideoTitle(e.target.value)}
-                  className="w-full h-11 px-4 bg-[#0b0c10] border border-[#232733] rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-[#0b0c10] border border-[#2e3444] rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-indigo-500"
                 />
               </div>
 
@@ -341,26 +375,26 @@ export default function CreatorStudioPage() {
                 <label className="text-xs font-semibold text-slate-300">Description</label>
                 <textarea
                   rows={4}
-                  placeholder="Describe your video, add chapters, timestamps, and resources..."
+                  placeholder="Tell viewers about your video"
                   value={videoDesc}
                   onChange={(e) => setVideoDesc(e.target.value)}
-                  className="w-full p-4 bg-[#0b0c10] border border-[#232733] rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-[#0b0c10] border border-[#2e3444] rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-indigo-500"
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-slate-300">Category</label>
                   <select
                     value={videoCategory}
                     onChange={(e) => setVideoCategory(e.target.value)}
-                    className="w-full h-10 px-3 bg-[#0b0c10] border border-[#232733] rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-[#0b0c10] border border-[#2e3444] rounded-xl px-4 py-2.5 text-xs text-white outline-none"
                   >
                     <option value="Technology">Technology</option>
-                    <option value="Coding">Coding</option>
-                    <option value="Music">Music</option>
                     <option value="Gaming">Gaming</option>
+                    <option value="Music">Music</option>
                     <option value="Science">Science</option>
+                    <option value="Education">Education</option>
                   </select>
                 </div>
 
@@ -369,26 +403,19 @@ export default function CreatorStudioPage() {
                   <select
                     value={videoVisibility}
                     onChange={(e) => setVideoVisibility(e.target.value)}
-                    className="w-full h-10 px-3 bg-[#0b0c10] border border-[#232733] rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-[#0b0c10] border border-[#2e3444] rounded-xl px-4 py-2.5 text-xs text-white outline-none"
                   >
-                    <option value="PUBLIC">Public (Everyone can search & view)</option>
-                    <option value="UNLISTED">Unlisted (Anyone with link)</option>
-                    <option value="PRIVATE">Private (Only you)</option>
+                    <option value="PUBLIC">Public</option>
+                    <option value="UNLISTED">Unlisted</option>
+                    <option value="PRIVATE">Private</option>
                   </select>
                 </div>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-[#232733]">
                 <button
-                  type="button"
-                  onClick={() => setUploadStep(1)}
-                  className="px-5 py-2 rounded-full border border-[#2e3444] text-xs font-semibold text-slate-300 hover:bg-[#1f232e]"
-                >
-                  Back
-                </button>
-                <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white shadow-lg shadow-indigo-600/20"
+                  className="px-6 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white shadow-lg shadow-indigo-600/30"
                 >
                   Publish Video
                 </button>
@@ -397,33 +424,31 @@ export default function CreatorStudioPage() {
           )}
 
           {uploadStep === 3 && (
-            <div className="py-8 text-center space-y-4">
-              <div className="w-14 h-14 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto shadow-xl">
-                <CheckCircle className="w-7 h-7" />
+            <div className="text-center space-y-4 py-6">
+              <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
+                <CheckCircle className="w-8 h-8" />
               </div>
-              <h3 className="font-bold text-xl text-white">Video Published Successfully!</h3>
-              <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
-                Transcoding complete! Multi-rendition HLS playlists (1080p, 720p, 480p) have been generated and synced across the VIONEX streaming network.
+              <h3 className="text-xl font-bold text-white">Video Published Successfully!</h3>
+              <p className="text-xs text-slate-400">
+                Your video is now indexed, transcoded across 4 resolutions, and available for streaming.
               </p>
-
-              <div className="flex justify-center gap-3 pt-2">
+              <div className="pt-2 flex justify-center gap-3">
                 <Link
                   href={`/watch/${publishedVideoId}`}
-                  className="px-5 py-2 rounded-full bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white shadow-md flex items-center gap-1.5"
+                  className="px-5 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-500 font-bold text-xs text-white flex items-center gap-2"
                 >
-                  <Play className="w-3.5 h-3.5 fill-white" />
-                  <span>Watch Video Live</span>
+                  <Play className="w-4 h-4 fill-white" />
+                  <span>Watch Video</span>
                 </Link>
                 <button
                   onClick={() => {
                     setUploadStep(1);
                     setVideoTitle('');
                     setVideoDesc('');
-                    setActiveTab('content');
                   }}
-                  className="px-5 py-2 rounded-full bg-[#1f232e] hover:bg-[#282d3b] text-xs font-semibold text-white border border-[#2e3444]"
+                  className="px-5 py-2.5 rounded-full bg-[#1e2230] hover:bg-[#282d3b] text-slate-200 font-bold text-xs"
                 >
-                  Go to Catalog
+                  Upload Another
                 </button>
               </div>
             </div>
@@ -431,52 +456,239 @@ export default function CreatorStudioPage() {
         </div>
       )}
 
-      {/* Analytics Tab */}
+      {/* Tab 3: Analytics Dashboard */}
       {activeTab === 'analytics' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-[#14161d] border border-[#232733] rounded-3xl p-6 space-y-4 shadow-xl">
-            <h3 className="font-bold text-sm text-white flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-indigo-400" />
-              <span>Audience Retention Analysis</span>
-            </h3>
-            <div className="h-44 rounded-2xl bg-[#0b0c10] border border-[#232733] p-4 flex items-end gap-2">
-              {[88, 82, 79, 75, 74, 72, 71, 70, 68, 65, 62, 60].map((val, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
-                  <div
-                    className="w-full bg-gradient-to-t from-indigo-600 to-indigo-400 rounded-t-sm transition-all hover:brightness-125"
-                    style={{ height: `${val}%` }}
-                  />
-                  <span className="text-[9px] text-slate-500">{i * 2}m</span>
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { label: 'Views (Last 28 Days)', value: '1.42M', delta: '+14.2%', icon: Eye },
+              { label: 'Watch Time (Hours)', value: '84.6K', delta: '+8.7%', icon: Clock },
+              { label: 'Subscribers Gained', value: '+4,250', delta: '+22.4%', icon: Users },
+              { label: 'Estimated Revenue', value: '$3,840.50', delta: '+18.1%', icon: DollarSign }
+            ].map((stat, i) => {
+              const Icon = stat.icon;
+              return (
+                <div key={i} className="p-5 rounded-2xl bg-[#14161d] border border-[#232733] space-y-2">
+                  <div className="flex items-center justify-between text-slate-400 text-xs font-semibold">
+                    <span>{stat.label}</span>
+                    <Icon className="w-4 h-4 text-indigo-400" />
+                  </div>
+                  <div className="text-2xl font-bold text-white font-mono">{stat.value}</div>
+                  <span className="text-[11px] font-bold text-emerald-400">{stat.delta} vs previous period</span>
                 </div>
-              ))}
-            </div>
-            <div className="text-xs text-slate-400">
-              Average view duration: <span className="text-white font-bold">14m 20s (68.4%)</span>
-            </div>
+              );
+            })}
           </div>
 
-          <div className="bg-[#14161d] border border-[#232733] rounded-3xl p-6 space-y-4 shadow-xl">
-            <h3 className="font-bold text-sm text-white flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-pink-400" />
-              <span>Traffic Source Types</span>
-            </h3>
-            <div className="space-y-3 pt-2">
-              {[
-                { label: 'Browse features (Home & Feed)', pct: 44, color: 'bg-indigo-500' },
-                { label: 'VIONEX Search', pct: 28, color: 'bg-pink-500' },
-                { label: 'Suggested Videos', pct: 18, color: 'bg-violet-500' },
-                { label: 'Direct or external links', pct: 10, color: 'bg-amber-500' }
-              ].map((s) => (
-                <div key={s.label} className="space-y-1">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-slate-300">{s.label}</span>
-                    <span className="font-mono font-bold text-white">{s.pct}%</span>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="p-6 rounded-2xl bg-[#14161d] border border-[#232733] space-y-4">
+              <h3 className="font-bold text-sm text-white">Audience Retention Benchmark</h3>
+              <div className="h-44 flex items-end gap-2 pt-6">
+                {[98, 88, 82, 79, 75, 71, 68, 64, 62, 59, 58, 55].map((val, idx) => (
+                  <div key={idx} className="flex-1 flex flex-col items-center gap-1">
+                    <div
+                      className="w-full bg-indigo-600 rounded-t-md hover:bg-indigo-500 transition-all"
+                      style={{ height: `${val}%` }}
+                    />
+                    <span className="text-[10px] text-slate-500">{idx * 30}s</span>
                   </div>
-                  <div className="w-full bg-[#0b0c10] h-2 rounded-full overflow-hidden">
-                    <div className={`${s.color} h-full rounded-full`} style={{ width: `${s.pct}%` }} />
+                ))}
+              </div>
+            </div>
+
+            <div className="p-6 rounded-2xl bg-[#14161d] border border-[#232733] space-y-4">
+              <h3 className="font-bold text-sm text-white">Traffic Sources</h3>
+              <div className="space-y-3">
+                {[
+                  { source: 'Suggested Videos & Home', pct: '54%' },
+                  { source: 'YouTube / Platform Search', pct: '26%' },
+                  { source: 'Channel Pages & End Screens', pct: '12%' },
+                  { source: 'Direct & External Deep-links', pct: '8%' }
+                ].map((s, idx) => (
+                  <div key={idx} className="space-y-1">
+                    <div className="flex justify-between text-xs text-slate-300">
+                      <span>{s.source}</span>
+                      <span className="font-mono text-indigo-400">{s.pct}</span>
+                    </div>
+                    <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                      <div className="h-full bg-indigo-600 rounded-full" style={{ width: s.pct }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 4: Comments Moderation */}
+      {activeTab === 'comments' && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-bold text-white">Creator Studio Comments Management</h2>
+          <div className="space-y-3">
+            {studioComments.map((sc) => (
+              <div key={sc.id} className="p-4 rounded-2xl bg-[#14161d] border border-[#232733] flex items-start gap-4">
+                <img src={sc.avatar} alt={sc.author} className="w-9 h-9 rounded-full object-cover shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-xs text-white">{sc.author}</span>
+                    <span className="text-[11px] text-slate-500">{sc.timestamp}</span>
+                    <span className="text-[10px] text-indigo-400 font-mono">on: {sc.videoTitle}</span>
+                  </div>
+                  <p className="text-xs text-slate-300">{sc.text}</p>
+                  <div className="flex items-center gap-3 pt-2">
+                    <button
+                      onClick={() => handleHeartComment(sc.id)}
+                      className={`flex items-center gap-1 text-xs font-semibold ${
+                        sc.hearted ? 'text-pink-500' : 'text-slate-400 hover:text-pink-400'
+                      }`}
+                    >
+                      <Heart className={`w-3.5 h-3.5 ${sc.hearted ? 'fill-pink-500' : ''}`} />
+                      <span>{sc.hearted ? 'Hearted' : 'Give Heart'}</span>
+                    </button>
+                    <button
+                      onClick={() => handlePinComment(sc.id)}
+                      className={`flex items-center gap-1 text-xs font-semibold ${
+                        sc.pinned ? 'text-indigo-400' : 'text-slate-400 hover:text-indigo-400'
+                      }`}
+                    >
+                      <Pin className="w-3.5 h-3.5" />
+                      <span>{sc.pinned ? 'Pinned' : 'Pin to Top'}</span>
+                    </button>
                   </div>
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tab 5: Copyright Claims */}
+      {activeTab === 'copyright' && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-bold text-white">Copyright Matches & Content ID</h2>
+          <div className="space-y-3">
+            {copyrightClaims.map((claim) => (
+              <div key={claim.id} className="p-5 rounded-2xl bg-[#14161d] border border-amber-500/30 flex items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <ShieldAlert className="w-4 h-4 text-amber-400" />
+                    <span className="font-bold text-xs text-white">{claim.videoTitle}</span>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    Claimant: <span className="text-slate-200">{claim.claimant}</span> • Segment: <span className="font-mono text-indigo-400">{claim.timestampClaimed}</span>
+                  </p>
+                  <div className="text-[11px] text-amber-400 font-semibold">{claim.status}</div>
+                </div>
+
+                {!claim.disputed && (
+                  <button
+                    onClick={() => {
+                      setActiveClaimId(claim.id);
+                      setDisputeModalOpen(true);
+                    }}
+                    className="px-4 py-2 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 text-xs font-bold border border-amber-500/40 transition-colors"
+                  >
+                    File Dispute
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tab 6: Community Posts */}
+      {activeTab === 'community' && (
+        <div className="space-y-6 max-w-2xl">
+          <form onSubmit={handleCreatePost} className="p-5 rounded-2xl bg-[#14161d] border border-[#232733] space-y-4">
+            <h3 className="font-bold text-sm text-white">Publish Community Update or Poll</h3>
+            <textarea
+              rows={3}
+              placeholder="What's happening? Share an update with your subscribers..."
+              value={newPostContent}
+              onChange={(e) => setNewPostContent(e.target.value)}
+              className="w-full bg-[#0b0c10] border border-[#2e3444] rounded-xl p-3 text-xs text-white outline-none focus:border-indigo-500"
+            />
+            <div className="space-y-2">
+              <span className="text-[11px] text-slate-400 font-semibold">Poll Options (Optional)</span>
+              {pollOptionsInput.map((opt, i) => (
+                <input
+                  key={i}
+                  type="text"
+                  placeholder={`Option ${i + 1}`}
+                  value={opt}
+                  onChange={(e) => {
+                    const next = [...pollOptionsInput];
+                    next[i] = e.target.value;
+                    setPollOptionsInput(next);
+                  }}
+                  className="w-full bg-[#0b0c10] border border-[#2e3444] rounded-lg px-3 py-1.5 text-xs text-white outline-none"
+                />
               ))}
+            </div>
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                className="px-5 py-2 rounded-full bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white shadow-md shadow-indigo-600/20"
+              >
+                Post
+              </button>
+            </div>
+          </form>
+
+          <div className="space-y-4">
+            {communityPosts.map((p) => (
+              <div key={p.id} className="p-5 rounded-2xl bg-[#14161d] border border-[#232733] space-y-3">
+                <div className="flex items-center justify-between text-xs text-slate-400">
+                  <span className="font-bold text-white">Channel Announcement</span>
+                  <span>{p.publishedAt}</span>
+                </div>
+                <p className="text-xs text-slate-200 leading-relaxed">{p.content}</p>
+                {p.pollOptions && p.pollOptions.length > 0 && (
+                  <div className="space-y-2 pt-2">
+                    {p.pollOptions.map((opt, idx) => (
+                      <div key={idx} className="p-2 rounded-xl bg-[#0b0c10] border border-[#232733] flex justify-between text-xs">
+                        <span className="text-slate-300">{opt.label}</span>
+                        <span className="text-indigo-400 font-mono">{opt.votes} votes</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Copyright Dispute Modal */}
+      {disputeModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-[#14161d] border border-[#2e3444] rounded-3xl p-6 space-y-4 shadow-2xl">
+            <h3 className="font-bold text-base text-white">File Copyright Dispute</h3>
+            <p className="text-xs text-slate-400">
+              Provide justification (Fair Use, Public Domain, Licensed Rights):
+            </p>
+            <textarea
+              rows={3}
+              value={disputeReason}
+              onChange={(e) => setDisputeReason(e.target.value)}
+              placeholder="Explain why this claim is invalid..."
+              className="w-full bg-[#0b0c10] border border-[#2e3444] rounded-xl p-3 text-xs text-white outline-none focus:border-indigo-500"
+            />
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setDisputeModalOpen(false)}
+                className="px-4 py-2 text-xs text-slate-400 hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDisputeSubmit}
+                className="px-4 py-2 rounded-full bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white"
+              >
+                Submit Dispute
+              </button>
             </div>
           </div>
         </div>
