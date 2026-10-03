@@ -16,12 +16,12 @@ let isSyncing = false;
 let pendingChanges = new Set();
 
 const IGNORED_PATTERNS = [
-  /[\\/]\.git([\\/]|$)/,
-  /[\\/]\.next([\\/]|$)/,
-  /[\\/]node_modules([\\/]|$)/,
-  /[\\/]dist([\\/]|$)/,
-  /[\\/]build([\\/]|$)/,
-  /[\\/]\.turbo([\\/]|$)/,
+  /(^|[\\/])\.git([\\/]|$)/,
+  /(^|[\\/])\.next([\\/]|$)/,
+  /(^|[\\/])node_modules([\\/]|$)/,
+  /(^|[\\/])dist([\\/]|$)/,
+  /(^|[\\/])build([\\/]|$)/,
+  /(^|[\\/])\.turbo([\\/]|$)/,
   /\.log$/,
   /\.tmp$/,
   /\.swp$/,
@@ -54,7 +54,6 @@ async function performSync() {
   try {
     const status = runGit('git status --porcelain');
     if (!status) {
-      console.log(`[${new Date().toLocaleTimeString()}] No changes to sync. Working tree clean.`);
       isSyncing = false;
       pendingChanges.clear();
       return;
@@ -67,7 +66,7 @@ async function performSync() {
 
     console.log(`\n======================================================`);
     console.log(`[Auto-Sync] Detected ${changedFiles.length} file change(s):`);
-    changedFiles.slice(0, 8).forEach((f) => console.log(`  • ${f}`));
+    changedFiles.slice(0, 8).forEach((f) => console.log(`  * ${f}`));
     if (changedFiles.length > 8) {
       console.log(`  ... and ${changedFiles.length - 8} more`);
     }
@@ -87,7 +86,7 @@ async function performSync() {
     console.log(`[Auto-Sync] Successfully synchronized with GitHub repository!`);
     console.log(`======================================================\n`);
   } catch (err) {
-    console.error(`[Auto-Sync] Sync failed or waiting for network: ${err.message || err}`);
+    console.error(`[Auto-Sync] Sync failed: ${err.message || err}`);
   } finally {
     isSyncing = false;
     pendingChanges.clear();
