@@ -436,6 +436,11 @@ export default function Player({
           <div>Buffer Health: <span className="text-emerald-400">42.8 s</span></div>
           <div>Dropped Frames: <span>0 / 1442 (0.00%)</span></div>
           <div>Latency to Live: <span>1.84s (Ultra-Low)</span></div>
+          <div className="border-t border-[#2e3444] pt-1 mt-1 text-[10px] text-slate-400 font-bold">HYPER-SCALE TELEMETRY:</div>
+          <div>Edge CDN PoP: <span className="text-cyan-400 font-bold">VIONEX BOM-1 (11.4ms RTT)</span></div>
+          <div>Edge Cache Status: <span className="text-emerald-400 font-bold">99.4% HIT (76.2% P2P Swarm)</span></div>
+          <div>Two-Tower AI Match: <span className="text-indigo-400 font-bold">0.942 (Semantic Cosine)</span></div>
+          <div>Content ID Status: <span className="text-emerald-400 font-bold">Cleared (0 Infringements)</span></div>
         </div>
       )}
 
