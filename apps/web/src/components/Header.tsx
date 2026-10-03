@@ -1,52 +1,127 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Search,
-  Video,
   Bell,
   User,
+  Video,
   Menu,
-  Flame,
   X,
-  Radio,
-  History,
-  Clock,
-  ThumbsUp,
-  ListVideo,
   Compass,
-  Film,
+  History,
+  ThumbsUp,
+  Clock,
   Settings,
   HelpCircle,
-  CheckCircle2
+  Radio,
+  Flame,
+  Film,
+  ListVideo,
+  ArrowRight
 } from 'lucide-react';
+import { getStoredVideos } from '@/lib/data';
+
+interface NotificationItem {
+  id: string;
+  title: string;
+  desc: string;
+  time: string;
+  unread: boolean;
+}
 
 export default function Header() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileDrawer, setShowMobileDrawer] = useState(false);
-  const [notifications, setNotifications] = useState([
-    { id: 1, title: 'Hyper Architect is live now!', desc: 'Coding VIONEX Live: Peer-to-Peer Swarms', time: '10m ago', unread: true },
-    { id: 2, title: 'Tokyo Synth Collective uploaded a video', desc: 'Ambient Synthesizer Jam Live in Tokyo', time: '2h ago', unread: true },
-    { id: 3, title: 'New comment on your video', desc: 'Alex River commented on "Building a Full-Scale YouTube Platform"', time: '1d ago', unread: false }
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  const [notifications, setNotifications] = useState<NotificationItem[]>([
+    {
+      id: '1',
+      title: 'New Upload from VIONEX Architecture',
+      desc: 'Deep Dive: WebRTC P2P Mesh with HLS Adaptive Bitrate is now streaming.',
+      time: '10m ago',
+      unread: true
+    },
+    {
+      id: '2',
+      title: 'Comment Hearted',
+      desc: 'TechLead gave your comment on HLS GOP Alignment a heart!',
+      time: '1h ago',
+      unread: true
+    },
+    {
+      id: '3',
+      title: 'Studio Milestone Reached',
+      desc: 'Your channel surpassed 425,000 subscribers! View real-time analytics.',
+      time: '5h ago',
+      unread: false
+    }
   ]);
-  const router = useRouter();
+
+  // Autocomplete matching
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSuggestions([]);
+      return;
+    }
+    const q = searchQuery.toLowerCase();
+    const all = getStoredVideos();
+    const candidateSet = new Set<string>();
+
+    all.forEach((v) => {
+      if (v.title.toLowerCase().includes(q)) candidateSet.add(v.title);
+      if (v.channel.name.toLowerCase().includes(q)) candidateSet.add(v.channel.name);
+      v.tags.forEach((t) => {
+        if (t.toLowerCase().includes(q)) candidateSet.add(t);
+      });
+    });
+
+    // Add common technology queries if matched
+    ['Adaptive Bitrate', 'HLS Stream', 'WebRTC P2P', 'Creator Studio', 'FFmpeg Transcoding'].forEach((item) => {
+      if (item.toLowerCase().includes(q)) candidateSet.add(item);
+    });
+
+    setSuggestions(Array.from(candidateSet).slice(0, 6));
+  }, [searchQuery]);
+
+  // Close suggestions on outside click
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
+      setShowSuggestions(false);
       router.push(`/results?search_query=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 
-  const markAllRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, unread: false })));
+  const handleSelectSuggestion = (s: string) => {
+    setSearchQuery(s);
+    setShowSuggestions(false);
+    router.push(`/results?search_query=${encodeURIComponent(s)}`);
   };
 
-  const hasUnread = notifications.some(n => n.unread);
+  const markAllRead = () => {
+    setNotifications(notifications.map((n) => ({ ...n, unread: false })));
+  };
+
+  const hasUnread = notifications.some((n) => n.unread);
 
   const navLinks = [
     { label: 'Home', href: '/', icon: Flame },
@@ -85,24 +160,49 @@ export default function Header() {
           </Link>
         </div>
 
-        {/* Global Search Input */}
-        <form onSubmit={handleSearch} className="flex-1 max-w-xl mx-4 hidden sm:flex items-center">
-          <div className="relative w-full flex items-center">
-            <input
-              type="text"
-              placeholder="Search videos, channels, topics..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-10 pl-4 pr-10 bg-[#0b0c10] border border-[#232733] focus:border-indigo-500 rounded-l-full text-sm text-slate-200 placeholder-slate-500 focus:outline-none transition-colors"
-            />
-          </div>
-          <button
-            type="submit"
-            className="h-10 px-5 bg-[#1f232e] hover:bg-[#282d3b] border border-l-0 border-[#232733] rounded-r-full flex items-center justify-center text-slate-300 transition-colors"
-          >
-            <Search className="w-4 h-4" />
-          </button>
-        </form>
+        {/* Global Search Input with Autocomplete */}
+        <div ref={searchContainerRef} className="flex-1 max-w-xl mx-4 hidden sm:block relative">
+          <form onSubmit={handleSearch} className="flex items-center">
+            <div className="relative w-full flex items-center">
+              <input
+                type="text"
+                placeholder="Search videos, channels, topics..."
+                value={searchQuery}
+                onFocus={() => setShowSuggestions(true)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setShowSuggestions(true);
+                }}
+                className="w-full h-10 pl-4 pr-10 bg-[#0b0c10] border border-[#232733] focus:border-indigo-500 rounded-l-full text-sm text-slate-200 placeholder-slate-500 focus:outline-none transition-colors"
+              />
+            </div>
+            <button
+              type="submit"
+              className="h-10 px-5 bg-[#1f232e] hover:bg-[#282d3b] border border-l-0 border-[#232733] rounded-r-full flex items-center justify-center text-slate-300 transition-colors"
+            >
+              <Search className="w-4 h-4" />
+            </button>
+          </form>
+
+          {/* Autocomplete Dropdown */}
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="absolute top-11 inset-x-0 bg-[#14161d] border border-[#2e3444] rounded-2xl shadow-2xl py-2 z-50 animate-in fade-in overflow-hidden">
+              {suggestions.map((s, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleSelectSuggestion(s)}
+                  className="w-full text-left px-4 py-2 hover:bg-[#1f232e] text-xs font-semibold text-slate-300 hover:text-white flex items-center justify-between group transition-colors"
+                >
+                  <div className="flex items-center gap-2.5 truncate">
+                    <Search className="w-3.5 h-3.5 text-slate-500 group-hover:text-indigo-400 shrink-0" />
+                    <span className="truncate">{s}</span>
+                  </div>
+                  <ArrowRight className="w-3 h-3 text-slate-600 group-hover:text-indigo-400 shrink-0 opacity-0 group-hover:opacity-100" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Action Shortcuts */}
         <div className="flex items-center gap-2 sm:gap-3 relative">
