@@ -110,7 +110,7 @@ export default function HistoryPage() {
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                 />
                 <span className="absolute bottom-1 right-1 bg-black/80 px-1.5 py-0.5 rounded text-[10px] font-mono text-white">
-                  {video.duration}
+                  {video.durationFormatted || `${video.duration}s`}
                 </span>
               </Link>
 
@@ -128,7 +128,7 @@ export default function HistoryPage() {
                   {video.description}
                 </p>
                 <div className="text-[11px] text-slate-500 mt-1">
-                  {video.views} • Watched recently
+                  {video.viewsCount} • Watched recently
                 </div>
               </div>
 

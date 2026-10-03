@@ -88,7 +88,7 @@ export default function WatchLaterPage() {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                   />
                   <span className="absolute bottom-1 right-1 bg-black/80 px-1.5 py-0.5 rounded text-[10px] font-mono text-white">
-                    {video.duration}
+                    {video.durationFormatted || `${video.duration}s`}
                   </span>
                 </Link>
 
@@ -103,7 +103,7 @@ export default function WatchLaterPage() {
                     <CheckCircle2 className="w-3 h-3 text-slate-400" />
                   </div>
                   <div className="text-[11px] text-slate-500 mt-0.5">
-                    {video.views} • {video.uploadedAt}
+                    {video.viewsCount} • {video.publishedAt}
                   </div>
                 </div>
 
