@@ -1,0 +1,12 @@
+{
+  "name": "@vionex/live-worker",
+  "version": "0.1.0",
+  "main": "dist/index.js",
+  "scripts": { "build": "tsc", "start": "node dist/index.js" },
+  "dependencies": {
+    "@vionex/database": "*",
+    "@vionex/media": "*",
+    "ioredis": "^5.4.1"
+  },
+  "devDependencies": { "typescript": "^5.7.0", "@types/node": "^22.0.0" }
+}

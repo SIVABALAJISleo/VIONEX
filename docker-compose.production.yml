@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://vionex:vionex_secure_pass@postgres:5432/vionex_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      STORAGE_DRIVER: local
+      LOCAL_STORAGE_DIR: /app/data/storage
+    volumes:
+      - vionex_media_storage:/app/data/storage
+      - vionex_media_quarantine:/app/data/quarantine
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    depends_on:
+      - api
+
+  media-worker:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.worker
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://vionex:vionex_secure_pass@postgres:5432/vionex_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      LOCAL_STORAGE_DIR: /app/data/storage
+    volumes:
+      - vionex_media_storage:/app/data/storage
+      - vionex_media_quarantine:/app/data/quarantine
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - vionex_media_storage:/var/www/vionex/storage:ro
+    depends_on:
+      - web
+      - api
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: vionex
+      POSTGRES_PASSWORD: vionex_secure_pass
+      POSTGRES_DB: vionex_db
+    volumes:
+      - vionex_pgdata_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vionex -d vionex_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - vionex_redisdata_prod:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  vionex_pgdata_prod:
+  vionex_redisdata_prod:
+  vionex_media_storage:
+  vionex_media_quarantine:

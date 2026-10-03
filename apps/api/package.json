@@ -1,0 +1,34 @@
+{
+  "name": "@vionex/api",
+  "version": "0.1.0",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsx watch src/server.ts"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^10.0.1",
+    "@fastify/cors": "^10.0.1",
+    "@fastify/helmet": "^12.0.1",
+    "@fastify/multipart": "^9.0.1",
+    "@fastify/rate-limit": "^10.1.1",
+    "@fastify/websocket": "^11.0.1",
+    "@vionex/auth": "*",
+    "@vionex/database": "*",
+    "@vionex/media": "*",
+    "@vionex/recommendations": "*",
+    "@vionex/shared-types": "*",
+    "@vionex/storage": "*",
+    "@vionex/validation": "*",
+    "bullmq": "^5.34.0",
+    "fastify": "^5.1.0",
+    "ioredis": "^5.4.1",
+    "nanoid": "^5.0.9"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0"
+  }
+}

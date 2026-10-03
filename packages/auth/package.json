@@ -1,0 +1,19 @@
+{
+  "name": "@vionex/auth",
+  "version": "0.1.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "argon2": "^0.41.1",
+    "jsonwebtoken": "^9.0.2",
+    "@vionex/database": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^22.0.0"
+  }
+}

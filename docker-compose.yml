@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: vionex-postgres
+    environment:
+      POSTGRES_USER: vionex
+      POSTGRES_PASSWORD: vionex_password_dev_only
+      POSTGRES_DB: vionex_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - vionex_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vionex -d vionex_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: vionex-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - vionex_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mailpit:
+    image: axllent/mailpit
+    container_name: vionex-mailpit
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # Web UI
+
+volumes:
+  vionex_pgdata:
+  vionex_redisdata:

@@ -1,0 +1,17 @@
+{
+  "name": "@vionex/media",
+  "version": "0.1.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "fluent-ffmpeg": "^2.1.3"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0",
+    "@types/fluent-ffmpeg": "^2.1.27"
+  }
+}
