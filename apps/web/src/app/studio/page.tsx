@@ -25,12 +25,21 @@ import {
   Clock,
   Sparkles,
   Heart,
-  Pin
+  Pin,
+  Cpu,
+  Globe,
+  Radio,
+  ScanLine,
+  Activity,
+  Server
 } from 'lucide-react';
 import { getStoredVideos, saveCustomVideo, VideoItem } from '@/lib/data';
+import { ContentIDEngine, ContentIDMatchResult } from '@/lib/content-id';
+import { GLOBAL_EDGE_POPS, GlobalEdgeDirector } from '@/lib/edge-cdn';
+import { TwoTowerEngine, UserContext } from '@/lib/two-tower';
 
 export default function CreatorStudioPage() {
-  const [activeTab, setActiveTab] = useState<'content' | 'upload' | 'analytics' | 'comments' | 'copyright' | 'community'>('content');
+  const [activeTab, setActiveTab] = useState<'content' | 'upload' | 'analytics' | 'two-tower' | 'comments' | 'copyright' | 'community'>('content');
   const [uploadStep, setUploadStep] = useState(1);
   const [videoTitle, setVideoTitle] = useState('');
   const [videoDesc, setVideoDesc] = useState('');
@@ -42,6 +51,11 @@ export default function CreatorStudioPage() {
   const [publishedVideoId, setPublishedVideoId] = useState('');
 
   const [videos, setVideos] = useState<VideoItem[]>([]);
+
+  // Content ID Live Scanner State
+  const [isScanningContentID, setIsScanningContentID] = useState(false);
+  const [scanTargetVideo, setScanTargetVideo] = useState<string>('');
+  const [liveScanResults, setLiveScanResults] = useState<ContentIDMatchResult[] | null>(null);
 
   // Studio Comments State
   const [studioComments, setStudioComments] = useState([
@@ -72,9 +86,10 @@ export default function CreatorStudioPage() {
     {
       id: 'cl-1',
       videoTitle: 'Ambient Soundtrack Test Stream',
-      claimant: 'AudioNetwork Soundscapes LLC',
-      timestampClaimed: '0:14 - 1:02',
+      claimant: 'Universal Soundtracks Group',
+      timestampClaimed: '0:14 - 1:04',
       status: 'Claimed (Monetization shared)',
+      confidence: '94%',
       disputed: false
     }
   ]);
@@ -100,7 +115,11 @@ export default function CreatorStudioPage() {
   const [pollOptionsInput, setPollOptionsInput] = useState(['', '']);
 
   useEffect(() => {
-    setVideos(getStoredVideos());
+    const list = getStoredVideos();
+    setVideos(list);
+    if (list.length > 0) {
+      setScanTargetVideo(list[0].title);
+    }
   }, []);
 
   const simulateUpload = () => {
@@ -154,6 +173,15 @@ export default function CreatorStudioPage() {
     setUploadStep(3);
   };
 
+  const handleRunContentIDScan = () => {
+    setIsScanningContentID(true);
+    setTimeout(() => {
+      const results = ContentIDEngine.scanMedia(scanTargetVideo);
+      setLiveScanResults(results);
+      setIsScanningContentID(false);
+    }, 1200);
+  };
+
   const handleHeartComment = (id: string) => {
     setStudioComments(
       studioComments.map((c) => (c.id === id ? { ...c, hearted: !c.hearted } : c))
@@ -198,6 +226,8 @@ export default function CreatorStudioPage() {
     setPollOptionsInput(['', '']);
   };
 
+  const edgeTelemetry = GlobalEdgeDirector.getGlobalTelemetry();
+
   return (
     <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-8">
       {/* Studio Header */}
@@ -205,10 +235,10 @@ export default function CreatorStudioPage() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-3">
             <Video className="w-8 h-8 text-indigo-400" />
-            VIONEX Creator Studio
+            VIONEX Creator Studio Pro
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            Manage channel content, real-time analytics, comments moderation, and copyright compliance.
+            Enterprise video lifecycle: Two-Tower DNN ranking, Global Edge CDN, automated Content ID, and real-time telemetry.
           </p>
         </div>
 
@@ -231,8 +261,9 @@ export default function CreatorStudioPage() {
           { id: 'content', label: 'Channel Content', icon: Layers },
           { id: 'upload', label: 'Upload & Transcode', icon: UploadCloud },
           { id: 'analytics', label: 'Analytics Dashboard', icon: BarChart3 },
+          { id: 'two-tower', label: 'Two-Tower AI & Global CDN', icon: Cpu },
           { id: 'comments', label: 'Comments Moderation', icon: MessageSquare },
-          { id: 'copyright', label: 'Copyright & Claims', icon: ShieldAlert },
+          { id: 'copyright', label: 'Live Content ID Scanner', icon: ShieldAlert },
           { id: 'community', label: 'Community Posts', icon: Users }
         ].map((tab) => {
           const Icon = tab.icon;
@@ -258,7 +289,7 @@ export default function CreatorStudioPage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-white">Your Published Videos ({videos.length})</h2>
-            <span className="text-xs text-slate-400 font-mono">Real-time status: Synced</span>
+            <span className="text-xs text-slate-400 font-mono">Real-time status: Synced across 5 Global Edge PoPs</span>
           </div>
 
           <div className="bg-[#111318] border border-[#232733] rounded-2xl overflow-hidden shadow-xl">
@@ -314,7 +345,7 @@ export default function CreatorStudioPage() {
         </div>
       )}
 
-      {/* Tab 2: Upload & Transcode Flow */}
+      {/* Tab 2: Upload Flow */}
       {activeTab === 'upload' && (
         <div className="max-w-2xl mx-auto bg-[#14161d] border border-[#2e3444] rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
           {uploadStep === 1 && (
@@ -325,7 +356,7 @@ export default function CreatorStudioPage() {
               <div>
                 <h3 className="text-lg font-bold text-white">Select Video File to Upload</h3>
                 <p className="text-xs text-slate-400 mt-1">
-                  Supports MP4, MOV, MKV, WebM up to 100GB. Multi-bitrate HLS packaging included.
+                  Supports MP4, MOV, MKV, WebM up to 100GB. Multi-bitrate HLS packaging and automatic Content ID scan included.
                 </p>
               </div>
 
@@ -430,7 +461,7 @@ export default function CreatorStudioPage() {
               </div>
               <h3 className="text-xl font-bold text-white">Video Published Successfully!</h3>
               <p className="text-xs text-slate-400">
-                Your video is now indexed, transcoded across 4 resolutions, and available for streaming.
+                Your video is now indexed, transcoded across 4 resolutions, and replicated across the Global Edge CDN.
               </p>
               <div className="pt-2 flex justify-center gap-3">
                 <Link
@@ -456,7 +487,7 @@ export default function CreatorStudioPage() {
         </div>
       )}
 
-      {/* Tab 3: Analytics Dashboard */}
+      {/* Tab 3: Standard Analytics Dashboard */}
       {activeTab === 'analytics' && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -500,8 +531,8 @@ export default function CreatorStudioPage() {
               <h3 className="font-bold text-sm text-white">Traffic Sources</h3>
               <div className="space-y-3">
                 {[
-                  { source: 'Suggested Videos & Home', pct: '54%' },
-                  { source: 'YouTube / Platform Search', pct: '26%' },
+                  { source: 'Two-Tower DNN Home Candidates', pct: '54%' },
+                  { source: 'Platform Full-Text Search', pct: '26%' },
                   { source: 'Channel Pages & End Screens', pct: '12%' },
                   { source: 'Direct & External Deep-links', pct: '8%' }
                 ].map((s, idx) => (
@@ -521,7 +552,96 @@ export default function CreatorStudioPage() {
         </div>
       )}
 
-      {/* Tab 4: Comments Moderation */}
+      {/* Tab 4: Two-Tower AI & Global Edge CDN */}
+      {activeTab === 'two-tower' && (
+        <div className="space-y-8">
+          {/* Two-Tower Neural Network Candidate Generation */}
+          <div className="p-6 rounded-3xl bg-[#14161d] border border-indigo-500/30 space-y-6 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#232733] pb-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Cpu className="w-6 h-6 text-indigo-400" />
+                  <h3 className="text-lg font-bold text-white">Two-Tower Deep Learning Recommendation Engine (DNN)</h3>
+                </div>
+                <p className="text-xs text-slate-400">
+                  Continuous vector dot-product scoring: Query Tower (User Vectors) × Candidate Tower (Video Embeddings).
+                </p>
+              </div>
+              <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-mono font-bold">
+                Inference Latency: 4.8ms
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 rounded-2xl bg-[#0e1015] border border-[#232733] space-y-2">
+                <span className="text-xs font-bold text-slate-400 block">Query Tower (User Context)</span>
+                <div className="text-xs text-slate-300 space-y-1 font-mono">
+                  <div>Embedding Dim: <span className="text-indigo-400">64-d Float32</span></div>
+                  <div>Category Weights: <span className="text-slate-200">Tech (0.85), Science (0.6)</span></div>
+                  <div>Context Factor: <span className="text-emerald-400">Desktop / Evening</span></div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-[#0e1015] border border-[#232733] space-y-2">
+                <span className="text-xs font-bold text-slate-400 block">Candidate Tower (Content)</span>
+                <div className="text-xs text-slate-300 space-y-1 font-mono">
+                  <div>Title Tokens: <span className="text-indigo-400">HLS / ABR / WebRTC</span></div>
+                  <div>Freshness Half-Life: <span className="text-slate-200">7 Days Exp Decay</span></div>
+                  <div>Channel Reputation: <span className="text-emerald-400">0.95 (Verified)</span></div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-[#0e1015] border border-[#232733] space-y-2">
+                <span className="text-xs font-bold text-slate-400 block">Scoring & Bandit Ranker</span>
+                <div className="text-xs text-slate-300 space-y-1 font-mono">
+                  <div>Cosine Similarity: <span className="text-indigo-400">0.942</span></div>
+                  <div>Exploration Epsilon: <span className="text-slate-200">15% Diversity</span></div>
+                  <div>Candidate Pool: <span className="text-emerald-400">Top 100 Retrieved</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Global Hyper-Scale Edge CDN Topology */}
+          <div className="p-6 rounded-3xl bg-[#14161d] border border-cyan-500/30 space-y-6 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#232733] pb-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Globe className="w-6 h-6 text-cyan-400" />
+                  <h3 className="text-lg font-bold text-white">Global Edge CDN & Traffic Director</h3>
+                </div>
+                <p className="text-xs text-slate-400">
+                  Google Global Cache (GGC) software-defined equivalent: Multi-PoP SSD caching and WebRTC peer mesh offload.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 font-mono text-xs">
+                <span className="text-slate-400">Origin Offload:</span>
+                <span className="text-cyan-400 font-bold">{edgeTelemetry.totalOriginBandwidthSavedPercent}% Saved</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {GLOBAL_EDGE_POPS.map((pop) => (
+                <div key={pop.id} className="p-4 rounded-2xl bg-[#0e1015] border border-[#232733] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-xs text-white">{pop.name}</span>
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  </div>
+                  <div className="text-[11px] text-slate-400">{pop.city} ({pop.region})</div>
+                  <div className="grid grid-cols-2 gap-2 pt-1 font-mono text-[11px]">
+                    <div>Latency: <span className="text-cyan-400 font-bold">{pop.avgLatencyMs}ms</span></div>
+                    <div>Hit Ratio: <span className="text-emerald-400 font-bold">{(pop.cacheHitRatio * 100).toFixed(1)}%</span></div>
+                    <div>P2P Mesh: <span className="text-indigo-400 font-bold">{(pop.p2pMeshOffloadRatio * 100).toFixed(1)}%</span></div>
+                    <div>Egress: <span className="text-slate-200">{pop.activeEgressBandwidthGbps} Gbps</span></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 5: Comments Moderation */}
       {activeTab === 'comments' && (
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-white">Creator Studio Comments Management</h2>
@@ -563,11 +683,107 @@ export default function CreatorStudioPage() {
         </div>
       )}
 
-      {/* Tab 5: Copyright Claims */}
+      {/* Tab 6: Live Content ID Scanner */}
       {activeTab === 'copyright' && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-bold text-white">Copyright Matches & Content ID</h2>
+        <div className="space-y-6">
+          {/* Live Content ID Fingerprint Scanner */}
+          <div className="p-6 rounded-3xl bg-[#14161d] border border-amber-500/30 space-y-5 shadow-2xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#232733] pb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <ScanLine className="w-6 h-6 text-amber-400" />
+                  <h3 className="text-lg font-bold text-white">Live Content ID Automated Fingerprinting Scanner</h3>
+                </div>
+                <p className="text-xs text-slate-400 mt-1">
+                  Scans acoustic sub-band spectral peaks and visual dHash vectors against the registered reference catalog.
+                </p>
+              </div>
+
+              <button
+                onClick={handleRunContentIDScan}
+                disabled={isScanningContentID}
+                className="px-5 py-2.5 rounded-full bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-600/20 transition-transform hover:scale-105"
+              >
+                <Activity className="w-4 h-4" />
+                <span>{isScanningContentID ? 'Analyzing Spectrogram...' : 'Run Content ID Scan'}</span>
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <label className="text-xs font-semibold text-slate-300 shrink-0">Scan Target Video:</label>
+              <select
+                value={scanTargetVideo}
+                onChange={(e) => setScanTargetVideo(e.target.value)}
+                className="bg-[#0b0c10] border border-[#2e3444] rounded-xl px-4 py-2 text-xs text-white outline-none flex-1"
+              >
+                {videos.map((v) => (
+                  <option key={v.id} value={v.title}>
+                    {v.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Scan Waveform Visualization */}
+            {isScanningContentID && (
+              <div className="p-4 rounded-2xl bg-[#0b0c10] border border-[#232733] space-y-3 animate-pulse">
+                <span className="text-[11px] font-mono text-amber-400 block">
+                  Computing 32-bit Chromaprint FFT hashes and perceptual frame gradients...
+                </span>
+                <div className="h-14 flex items-end gap-1.5">
+                  {[45, 80, 60, 95, 30, 70, 85, 40, 90, 65, 50, 75, 88, 35, 92, 58].map((h, i) => (
+                    <div
+                      key={i}
+                      className="flex-1 bg-amber-500/80 rounded-t-sm transition-all duration-150"
+                      style={{ height: `${h}%` }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Match Results Display */}
+            {liveScanResults && (
+              <div className="space-y-3 pt-2">
+                <h4 className="text-xs font-bold text-slate-300">Scan Results:</h4>
+                {liveScanResults.length > 0 ? (
+                  liveScanResults.map((res, idx) => (
+                    <div
+                      key={idx}
+                      className="p-4 rounded-2xl bg-[#0e1015] border border-amber-500/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                    >
+                      <div className="space-y-1">
+                        <div className="font-bold text-amber-300 flex items-center gap-2">
+                          <ShieldAlert className="w-4 h-4" />
+                          <span>Matched: {res.assetTitle}</span>
+                        </div>
+                        <p className="text-slate-400 text-[11px]">
+                          Rightsholder: <span className="text-white">{res.owner}</span> • {res.matchedSegmentDetails}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 font-mono font-bold text-[10px]">
+                          Confidence: {Math.round(res.confidenceScore * 100)}%
+                        </span>
+                        <span className="px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 font-mono font-bold text-[10px]">
+                          Policy: {res.policyApplied}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4" />
+                    <span>No copyright infringements found. Video cleared for 100% creator monetization!</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Existing Claims Registry */}
           <div className="space-y-3">
+            <h4 className="text-sm font-bold text-white">Active Content ID Claims</h4>
             {copyrightClaims.map((claim) => (
               <div key={claim.id} className="p-5 rounded-2xl bg-[#14161d] border border-amber-500/30 flex items-center justify-between gap-4">
                 <div className="space-y-1">
@@ -578,7 +794,7 @@ export default function CreatorStudioPage() {
                   <p className="text-xs text-slate-400">
                     Claimant: <span className="text-slate-200">{claim.claimant}</span> • Segment: <span className="font-mono text-indigo-400">{claim.timestampClaimed}</span>
                   </p>
-                  <div className="text-[11px] text-amber-400 font-semibold">{claim.status}</div>
+                  <div className="text-[11px] text-amber-400 font-semibold">{claim.status} (Confidence: {claim.confidence})</div>
                 </div>
 
                 {!claim.disputed && (
@@ -598,7 +814,7 @@ export default function CreatorStudioPage() {
         </div>
       )}
 
-      {/* Tab 6: Community Posts */}
+      {/* Tab 7: Community Posts */}
       {activeTab === 'community' && (
         <div className="space-y-6 max-w-2xl">
           <form onSubmit={handleCreatePost} className="p-5 rounded-2xl bg-[#14161d] border border-[#232733] space-y-4">
