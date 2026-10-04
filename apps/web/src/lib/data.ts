@@ -794,3 +794,30 @@ export function clearRecentSearches() {
     localStorage.setItem('vionex_recent_searches', JSON.stringify([]));
   } catch {}
 }
+
+/**
+ * Deterministic number formatter that formats numbers with commas (e.g. 425,000)
+ * identically on both Node.js SSR and client browsers regardless of user locale.
+ */
+export function formatNumber(num: number | string | null | undefined): string {
+  if (num === null || num === undefined) return '0';
+  const n = typeof num === 'string' ? parseFloat(num) : num;
+  if (isNaN(n)) return String(num);
+  const parts = n.toString().split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return parts.join('.');
+}
+
+export function formatCompactNumber(num: number | string | null | undefined): string {
+  if (num === null || num === undefined) return '0';
+  const n = typeof num === 'string' ? parseFloat(num) : num;
+  if (isNaN(n)) return String(num);
+  if (n >= 1_000_000) {
+    return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+  }
+  if (n >= 1_000) {
+    return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+  }
+  return n.toString();
+}
+

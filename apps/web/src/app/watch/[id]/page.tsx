@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import {
   INITIAL_VIDEOS,
+  formatNumber,
   getStoredVideos,
   addToHistory,
   toggleLikeVideo,
@@ -361,8 +362,8 @@ export default function WatchPage() {
                     <CheckCircle2 className="w-4 h-4 text-[#606060] fill-[#606060] text-white" />
                   )}
                 </Link>
-                <div className="text-xs text-[#606060]">
-                  {subCount.toLocaleString()} subscribers
+                <div className="text-xs text-[#606060]" suppressHydrationWarning>
+                  {formatNumber(subCount)} subscribers
                 </div>
               </div>
 
@@ -390,7 +391,7 @@ export default function WatchPage() {
                   aria-label="Like"
                 >
                   <ThumbsUp className={`w-4 h-4 ${isLiked ? 'fill-[#FF0000] text-[#FF0000]' : 'text-[#0F0F0F]'}`} />
-                  <span>{likes.toLocaleString()}</span>
+                  <span suppressHydrationWarning>{formatNumber(likes)}</span>
                 </button>
                 <div className="w-[1px] h-5 bg-[#D4D4D4]" />
                 <button
