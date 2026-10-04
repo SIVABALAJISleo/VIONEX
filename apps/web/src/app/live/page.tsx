@@ -59,12 +59,11 @@ export default function LivePage() {
         <div className="flex-1 space-y-4">
           <div className="w-full rounded-2xl overflow-hidden bg-black shadow-sm aspect-video">
             <Player
-              videoUrl={activeStream.streamUrl}
+              src={activeStream.streamUrl}
               poster={activeStream.thumbnailUrl}
               title={activeStream.title}
-              author={activeStream.channel.name}
-              views={`${activeStream.viewers} watching now`}
-              publishedAt="Live now"
+              channelName={activeStream.channel.name}
+              autoPlay={true}
             />
           </div>
 

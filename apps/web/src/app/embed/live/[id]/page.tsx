@@ -1,15 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useParams } from 'next/navigation';
-import { MessageSquare, ExternalLink, Play, Volume2, Maximize2 } from 'lucide-react';
-import Player from '../../../../components/Player';
-import { SAMPLE_VIDEOS } from '../../../../lib/data';
+import { MessageSquare, ExternalLink } from 'lucide-react';
+import Player from '@/components/Player';
+import { INITIAL_VIDEOS } from '@/lib/data';
 
 export default function LiveEmbedPage() {
   const params = useParams();
   const streamId = (params?.id as string) || 'live_default';
-  const video = SAMPLE_VIDEOS[0];
+  const video = INITIAL_VIDEOS[0];
 
   const handleOpenChatPopout = () => {
     if (typeof window !== 'undefined') {
@@ -26,11 +26,11 @@ export default function LiveEmbedPage() {
       {/* Video Container */}
       <div className="flex-1 relative w-full h-full">
         <Player
-          videoUrl={video.videoUrl}
+          src={video.videoUrl}
+          poster={video.thumbnailUrl}
           title={`${video.title} [LIVE EMBED]`}
-          author="VIONEX Engineering"
-          views="14,850 watching now"
-          publishedAt="Started 45 mins ago"
+          channelName="VIONEX Engineering"
+          autoPlay={true}
         />
 
         {/* Live Embed Overlays */}
@@ -41,7 +41,7 @@ export default function LiveEmbedPage() {
           </div>
           <button
             onClick={handleOpenChatPopout}
-            className="flex items-center gap-1.5 bg-black/80 hover:bg-black text-white text-xs font-medium px-3 py-1.5 rounded-full border border-white/20 shadow-lg backdrop-blur-sm transition-all"
+            className="flex items-center gap-1.5 bg-black/80 hover:bg-black text-white text-xs font-medium px-3 py-1.5 rounded-full border border-white/20 shadow-lg backdrop-blur-sm transition-all cursor-pointer"
             title="Open Interactive Live Chat in Popout Window"
           >
             <MessageSquare className="w-3.5 h-3.5 text-[#FF0000]" />
