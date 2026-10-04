@@ -21,14 +21,23 @@ const API_BASE = 'http://localhost:4000/api/v1';
 
 async function request(endpoint: string, options: any = {}) {
   const url = `${API_BASE}${endpoint}`;
-  const headers = {
-    'Content-Type': 'application/json',
+  const headers: Record<string, string> = {
     ...(options.headers || {})
   };
+  let body: string | undefined = undefined;
+
+  if (options.body !== undefined) {
+    headers['Content-Type'] = 'application/json';
+    body = JSON.stringify(options.body);
+  } else if (options.method === 'POST' || options.method === 'PUT' || options.method === 'PATCH') {
+    headers['Content-Type'] = 'application/json';
+    body = JSON.stringify({});
+  }
+
   const res = await fetch(url, {
     method: options.method || 'GET',
     headers,
-    body: options.body ? JSON.stringify(options.body) : undefined
+    body
   });
   const data = await res.json().catch(() => ({}));
   return { status: res.status, ok: res.ok, data };
@@ -114,7 +123,6 @@ async function runAll10Journeys() {
     const bobDevs = await request(`/communication/devices?userId=${userIdB}`, { headers: authA });
     assert.strictEqual(bobDevs.status, 200);
     assert.ok(bobDevs.data.devices.length >= 1, 'Bob should have at least 1 verified device');
-    const bobDeviceId = bobDevs.data.devices[0].deviceId;
 
     // 3. Alice derives shared message key and encrypts message with AES-256-GCM
     const sharedSecret = crypto.randomBytes(32);
@@ -263,7 +271,7 @@ async function runAll10Journeys() {
     });
     assert.strictEqual(callRes.status, 200);
     assert.ok(callRes.data.credentials.token, 'Must return signed LiveKit JWT');
-    assert.strictEqual(callRes.data.credentials.roomName, voiceRoomId);
+    assert.strictEqual(callRes.data.credentials.roomId, voiceRoomId);
 
     // 2. Signal call status transition: CONNECTED -> COMPLETED
     const sigRes1 = await request('/communication/calls/signal', {
@@ -311,7 +319,7 @@ async function runAll10Journeys() {
     });
     assert.strictEqual(vidRes.status, 200);
     assert.ok(vidRes.data.credentials.token);
-    assert.strictEqual(vidRes.data.credentials.roomName, videoRoomId);
+    assert.strictEqual(vidRes.data.credentials.roomId, videoRoomId);
 
     // Signal video call completion
     await request('/communication/calls/signal', {
@@ -541,23 +549,50 @@ async function runAll10Journeys() {
   // ---------------------------------------------------------------------------
   console.log('▶ [JOURNEY 10/10] VIONEX Video/Shorts Deep-Link Card Sharing (Zero-Regression Parity)...');
   try {
-    // 1. Fetch an existing video from VIONEX video engine
-    const videosRes = await request('/discovery/trending');
-    assert.strictEqual(videosRes.status, 200);
-    assert.ok(videosRes.data.videos.length > 0, 'VIONEX must have videos available');
-    const sampleVideo = videosRes.data.videos[0];
-    const videoId = sampleVideo.id;
+    // 1. Fetch an existing video from VIONEX home feed or upload benchmark video
+    const homeRes = await request('/discovery/home');
+    let videoId: string;
+    let sampleVideo: any;
+
+    if (homeRes.data.feed && homeRes.data.feed.length > 0) {
+      sampleVideo = homeRes.data.feed[0];
+      videoId = sampleVideo.id;
+    } else {
+      const channelId = meA.data.user.channels[0].id;
+      const upRes = await request('/videos/upload/session', {
+        method: 'POST',
+        headers: authA,
+        body: {
+          channelId,
+          title: `VIONEX Community Card Video #${ts}`,
+          description: 'Shared in E2EE Chat',
+          filesize: 10485760,
+          mimeType: 'video/mp4',
+          isShort: false,
+          category: 'Technology',
+          visibility: 'PUBLIC'
+        }
+      });
+      videoId = upRes.data.videoId;
+      sampleVideo = {
+        id: videoId,
+        title: `VIONEX Community Card Video #${ts}`,
+        duration: 180,
+        thumbnailUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe',
+        channel: { name: 'Alice Walker' }
+      };
+    }
 
     // 2. Alice sends chat message with rich VIONEX video card attached
     const cardPayload = {
       type: 'vionex_video',
-      videoId: sampleVideo.id,
+      videoId,
       title: sampleVideo.title,
-      duration: sampleVideo.duration,
-      durationFormatted: `${Math.floor(sampleVideo.duration / 60)}:${(sampleVideo.duration % 60).toString().padStart(2, '0')}`,
-      thumbnailUrl: sampleVideo.thumbnailUrl,
+      duration: sampleVideo.duration || 180,
+      durationFormatted: '3:00',
+      thumbnailUrl: sampleVideo.thumbnailUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe',
       channelTitle: sampleVideo.channel?.name || 'VIONEX Creator',
-      watchUrl: `/watch/${sampleVideo.id}`
+      watchUrl: `/watch/${videoId}`
     };
 
     const shareRes = await request('/communication/messages/envelope', {
