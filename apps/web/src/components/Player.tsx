@@ -113,6 +113,7 @@ export default function Player({
   const [isLoading, setIsLoading] = useState(true);
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const [playbackError, setPlaybackError] = useState<string | null>(null);
+  const [retryTrigger, setRetryTrigger] = useState(0);
 
   const hlsRef = useRef<Hls | null>(null);
   const effectiveSrc = src;
@@ -261,14 +262,22 @@ export default function Player({
     }
   }, [playbackSpeed]);
 
-  // HLS stream setup
+  // Media / HLS stream setup
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
     setIsLoading(true);
+    setPlaybackError(null);
 
-    if (Hls.isSupported() && effectiveSrc.includes('.m3u8')) {
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
+    const isHls = effectiveSrc.includes('.m3u8');
+
+    if (isHls && Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: true,
@@ -325,12 +334,64 @@ export default function Player({
 
       return () => {
         hls.destroy();
+        hlsRef.current = null;
       };
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    } else if (isHls && video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = effectiveSrc;
-      setIsLoading(false);
+      const onLoaded = () => {
+        setIsLoading(false);
+        if (autoPlay) {
+          video.play()
+            .then(() => {
+              setIsPlaying(true);
+              setAutoplayBlocked(false);
+            })
+            .catch(() => setAutoplayBlocked(true));
+        }
+      };
+      video.addEventListener('loadedmetadata', onLoaded, { once: true });
+      return () => {
+        video.removeEventListener('loadedmetadata', onLoaded);
+      };
+    } else {
+      // Direct MP4 / WebM / Local media playback
+      video.src = effectiveSrc;
+      video.load();
+      setQualities([
+        { id: 0, height: 1080, bitrate: 8000000 },
+        { id: 1, height: 720, bitrate: 4500000 },
+        { id: 2, height: 480, bitrate: 2000000 }
+      ]);
+      const handleCanPlay = () => {
+        setIsLoading(false);
+        if (autoPlay) {
+          video.play()
+            .then(() => {
+              setIsPlaying(true);
+              setAutoplayBlocked(false);
+            })
+            .catch(() => {
+              setAutoplayBlocked(true);
+              setIsPlaying(false);
+            });
+        }
+      };
+      const handleError = () => {
+        setIsLoading(false);
+        setPlaybackError('Stream manifest unavailable or still transcoding (HTTP 404). Please retry shortly.');
+      };
+
+      video.addEventListener('canplay', handleCanPlay, { once: true });
+      video.addEventListener('loadedmetadata', handleCanPlay, { once: true });
+      video.addEventListener('error', handleError);
+
+      return () => {
+        video.removeEventListener('canplay', handleCanPlay);
+        video.removeEventListener('loadedmetadata', handleCanPlay);
+        video.removeEventListener('error', handleError);
+      };
     }
-  }, [effectiveSrc, autoPlay, setIsPlaying]);
+  }, [effectiveSrc, autoPlay, setIsPlaying, retryTrigger]);
 
   const togglePlay = useCallback(() => {
     const video = videoRef.current;
@@ -643,6 +704,7 @@ export default function Player({
                 hlsRef.current.destroy();
                 hlsRef.current = null;
               }
+              setRetryTrigger((prev) => prev + 1);
             }}
             className="px-6 py-2.5 rounded-full bg-[#FF0000] hover:bg-red-700 text-white text-sm font-semibold transition-all transform hover:scale-105 active:scale-95 shadow-lg flex items-center gap-2"
           >

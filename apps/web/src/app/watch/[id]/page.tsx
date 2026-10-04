@@ -59,12 +59,15 @@ export default function WatchPage() {
   const params = useParams();
   const router = useRouter();
   
-  // Normalize videoId (handle both hyphens and underscores)
+  // Normalize videoId (handle hyphens, underscores, case insensitivity)
   const rawId = (params?.id as string) || 'vid-demo-001';
-  const videoId = rawId.replace('_', '-');
+  const videoId = rawId.toLowerCase().replace(/_/g, '-');
 
   const initialVideo = INITIAL_VIDEOS.find(
-    (v) => v.id === videoId || v.id === rawId || v.id.replace('_', '-') === videoId
+    (v) =>
+      v.id.toLowerCase() === videoId ||
+      v.id.toLowerCase() === rawId.toLowerCase() ||
+      v.id.replace(/_/g, '-').toLowerCase() === videoId
   ) || INITIAL_VIDEOS[0];
 
   const { playVideo, isTheaterMode } = usePlayer();
@@ -142,7 +145,11 @@ export default function WatchPage() {
     setAllVideos(list);
     
     // Find matching video by id or normalized id
-    const found = list.find((v) => v.id === videoId || v.id === rawId || v.id.replace('_', '-') === videoId) || list[0];
+    const found = list.find((v) => 
+      v.id.toLowerCase() === videoId || 
+      v.id.toLowerCase() === rawId.toLowerCase() || 
+      v.id.replace(/_/g, '-').toLowerCase() === videoId
+    ) || list[0];
     setVideo(found);
 
     if (found) {
