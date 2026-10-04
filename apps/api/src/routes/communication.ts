@@ -255,9 +255,12 @@ export const communicationRoutes: FastifyPluginAsync = async (fastify) => {
     const identity = await prisma.communicationIdentity.findUnique({ where: { userId: user.id } });
     if (!identity) return reply.send({ success: true, envelopes: [] });
 
-    const matching = e2eeEnvelopes.filter(env => 
-      (env.roomId === roomId || env.recipientIdentityId === identity.id || env.senderIdentityId === identity.id)
-    );
+    const matching = e2eeEnvelopes.filter(env => {
+      if (roomId) {
+        return env.roomId === roomId;
+      }
+      return env.recipientIdentityId === identity.id || env.senderIdentityId === identity.id;
+    });
 
     return reply.send({ success: true, envelopes: matching });
   });
