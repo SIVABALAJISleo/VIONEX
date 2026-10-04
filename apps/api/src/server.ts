@@ -13,6 +13,8 @@ import { socialRoutes } from './routes/social';
 import { discoveryRoutes } from './routes/discovery';
 import { analyticsRoutes } from './routes/analytics';
 import { liveRoutes } from './routes/live';
+import { copyrightRoutes } from './routes/copyright';
+import { paymentRoutes } from './routes/payments';
 
 const fastify = Fastify({
   logger: process.env.NODE_ENV !== 'production'
@@ -33,7 +35,7 @@ async function bootstrap() {
   });
 
   await fastify.register(rateLimit, {
-    max: 100,
+    max: 200,
     timeWindow: '1 minute'
   });
 
@@ -59,6 +61,8 @@ async function bootstrap() {
   fastify.register(discoveryRoutes, { prefix: '/api/v1/discovery' });
   fastify.register(analyticsRoutes, { prefix: '/api/v1/analytics' });
   fastify.register(liveRoutes, { prefix: '/api/v1/live' });
+  fastify.register(copyrightRoutes, { prefix: '/api/v1/copyright' });
+  fastify.register(paymentRoutes, { prefix: '/api/v1/payments' });
 
   // Global Error Handler
   fastify.setErrorHandler((error, request, reply) => {

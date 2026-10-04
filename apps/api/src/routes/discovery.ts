@@ -5,7 +5,18 @@ import { RecommendationEngine } from '@vionex/recommendations';
 export async function discoveryRoutes(app: FastifyInstance) {
   // 1. Personalized Home Feed
   app.get('/home', async (request, reply) => {
-    const candidates = await RecommendationEngine.getHomeFeedCandidates();
+    let userId: string | undefined;
+    try {
+      const authHeader = request.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        const { AuthService } = await import('@vionex/auth');
+        const payload = AuthService.verifyAccessToken(token);
+        if (payload) userId = payload.userId;
+      }
+    } catch {}
+
+    const candidates = await RecommendationEngine.getHomeFeedCandidates(userId);
     const videoIds = candidates.map(c => c.videoId);
 
     const videos = await prisma.video.findMany({
@@ -19,6 +30,8 @@ export async function discoveryRoutes(app: FastifyInstance) {
 
     return reply.send({
       success: true,
+      personalized: Boolean(userId),
+      userId: userId || null,
       feed: videos.map(v => ({
         ...v,
         viewsCount: v.viewsCount.toString(),
@@ -64,30 +77,24 @@ export async function discoveryRoutes(app: FastifyInstance) {
     });
   });
 
-  // 3. Shorts Vertical Feed
-  app.get('/shorts', async (request, reply) => {
-    const shorts = await prisma.video.findMany({
+  // 3. Search Autocomplete
+  app.get('/search/suggest', async (request, reply) => {
+    const { q } = request.query as { q?: string };
+    if (!q) return reply.send({ success: true, suggestions: [] });
+
+    const videos = await prisma.video.findMany({
       where: {
-        isShort: true,
-        state: 'PUBLISHED',
-        visibility: 'PUBLIC'
+        title: { startsWith: q, mode: 'insensitive' },
+        visibility: 'PUBLIC',
+        state: 'PUBLISHED'
       },
-      include: {
-        channel: {
-          select: { id: true, handle: true, name: true, avatarUrl: true, isVerified: true }
-        }
-      },
-      orderBy: { publishedAt: 'desc' },
-      take: 15
+      select: { title: true },
+      take: 8
     });
 
     return reply.send({
       success: true,
-      shorts: shorts.map(s => ({
-        ...s,
-        viewsCount: s.viewsCount.toString(),
-        originalFilesize: s.originalFilesize ? s.originalFilesize.toString() : null
-      }))
+      suggestions: videos.map(v => v.title)
     });
   });
 }
