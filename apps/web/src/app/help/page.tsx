@@ -1,120 +1,69 @@
 'use client';
 
 import React, { useState } from 'react';
-import { HelpCircle, ChevronDown, ChevronUp, CheckCircle, MessageSquare, ShieldCheck, Cpu, Send } from 'lucide-react';
+import { HelpCircle, MessageSquare, ChevronDown, ChevronUp, Send, Check } from 'lucide-react';
 
-interface FaqItem {
-  q: string;
-  a: string;
-  category: string;
-}
-
-const FAQS: FaqItem[] = [
+const FAQS = [
   {
-    q: 'How does VIONEX Adaptive Bitrate (ABR) Streaming work?',
-    a: 'VIONEX transcodes ingested video into multi-rendition HLS (240p up to 4K) using aligned 2-second keyframes. As your network bandwidth fluctuates, the player seamlessly switches resolution levels without buffering pauses or audio desync.',
-    category: 'Streaming'
+    q: 'How does VIONEX stream videos with Adaptive Bitrate (ABR)?',
+    a: 'VIONEX transcodes source media into HLS multi-bitrate representations (1080p, 720p, 480p, 360p) with keyframes strictly aligned every 2 seconds. The HLS.js player monitors network throughput and switches renditions seamlessly.'
   },
   {
-    q: 'What is WebRTC P2P-Assisted Bandwidth Optimization?',
-    a: 'When multiple viewers watch the same video segment simultaneously, VIONEX establishes lightweight WebRTC DataChannels between peers. Peers exchange cached video chunks, reducing CDN egress load by up to 80% with an automatic circuit breaker fallback to origin servers.',
-    category: 'Streaming'
+    q: 'What is the WebRTC P2P mesh delivery offload?',
+    a: 'When multiple peers watch the same high-bitrate stream simultaneously, WebRTC Datachannels exchange media segments peer-to-peer, saving up to 76.2% origin egress bandwidth while keeping latency low.'
   },
   {
-    q: 'How can creators monetize on VIONEX?',
-    a: 'VIONEX features an immutable double-entry ledger supporting multiple revenue streams: paid channel memberships, Super Chats during live streams, pay-per-view video rentals, and privacy-respecting VAST/VMAP video advertisements.',
-    category: 'Monetization'
+    q: 'How does the Two-Tower Deep Learning recommendation ranker work?',
+    a: 'VIONEX computes 64-dimensional dense vectors for the Query Tower (user history & session preferences) and the Candidate Tower (video metadata & channel authority), calculating cosine dot-product scores in real time.'
   },
   {
-    q: 'Can I self-host VIONEX for my own organization or community?',
-    a: 'Yes! VIONEX is 100% open-source and containerized. You can run it on a single $5/mo VPS using Docker Compose, or scale horizontally across Kubernetes clusters with S3-compatible object storage.',
-    category: 'Deployment'
-  },
-  {
-    q: 'What video formats and codecs are supported for uploads?',
-    a: 'VIONEX accepts MP4, WebM, MKV, MOV, and AVI containers encoded in H.264, H.265/HEVC, VP9, or AV1 up to 10GB per video.',
-    category: 'Uploads'
+    q: 'How does Live Content ID audio and video fingerprinting work?',
+    a: 'Audio streams are decomposed into 32-bit sub-band FFT spectral differences (Chromaprint/AcoustID), and video frames are fingerprinted using 64-bit perceptual dHash. The engine cross-correlates sliding windows against reference databases.'
   }
 ];
 
 export default function HelpPage() {
-  const [openIdx, setOpenIdx] = useState<number | null>(0);
-  const [feedbackCategory, setFeedbackCategory] = useState('bug');
-  const [feedbackMessage, setFeedbackMessage] = useState('');
-  const [submitted, setSubmitted] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [feedback, setFeedback] = useState('');
+  const [sent, setSent] = useState(false);
 
   const handleSubmitFeedback = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!feedbackMessage.trim()) return;
-    setSubmitted(true);
-    setFeedbackMessage('');
-    setTimeout(() => setSubmitted(false), 4000);
+    if (!feedback.trim()) return;
+    setSent(true);
+    setFeedback('');
+    setTimeout(() => setSent(false), 3000);
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-8">
-      {/* Header */}
-      <div className="text-center space-y-3 py-6 border-b border-[#232733]">
-        <div className="w-14 h-14 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center mx-auto shadow-lg shadow-indigo-600/10">
-          <HelpCircle className="w-7 h-7" />
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
-          Help & Support Center
+    <div className="max-w-4xl mx-auto p-4 sm:p-6 bg-white text-[#0F0F0F] min-h-[85vh] space-y-8">
+      <div className="pb-3 border-b border-[#E5E5E5]">
+        <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+          <HelpCircle className="w-6 h-6 text-[#0F0F0F]" />
+          Help & Feedback
         </h1>
-        <p className="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto">
-          Find answers about streaming, creator tools, playback optimization, and report issues.
-        </p>
+        <p className="text-xs text-[#606060] mt-0.5">Explore frequently asked questions and send feedback to the engineering team.</p>
       </div>
 
-      {/* System Status Banner */}
-      <div className="p-4 rounded-2xl bg-[#14161d] border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg">
-        <div className="flex items-center gap-3">
-          <div className="w-3 h-3 rounded-full bg-emerald-500 animate-ping"></div>
-          <div>
-            <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
-              <span>All VIONEX Services Operational</span>
-              <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-            </h3>
-            <p className="text-[11px] text-slate-400">
-              API Cluster, FFmpeg Transcoding Nodes, WebRTC Trackers, and HLS CDN are healthy.
-            </p>
-          </div>
-        </div>
-        <span className="text-[11px] font-mono text-emerald-400 font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 self-start sm:self-auto">
-          99.98% Uptime
-        </span>
-      </div>
-
-      {/* FAQs Accordion */}
+      {/* FAQ Section */}
       <div className="space-y-4">
-        <h2 className="text-lg font-bold text-white flex items-center gap-2">
-          <Cpu className="w-5 h-5 text-indigo-400" />
-          <span>Frequently Asked Questions</span>
-        </h2>
-
-        <div className="space-y-3">
+        <h2 className="text-base font-bold text-[#0F0F0F]">Frequently Asked Questions</h2>
+        <div className="divide-y divide-[#E5E5E5] border border-[#E5E5E5] rounded-2xl overflow-hidden bg-white shadow-sm">
           {FAQS.map((faq, idx) => {
-            const isOpen = openIdx === idx;
+            const isOpen = openFaq === idx;
             return (
-              <div
-                key={idx}
-                className="bg-[#14161d] border border-[#232733] rounded-2xl overflow-hidden transition-all"
-              >
+              <div key={idx} className="p-4">
                 <button
-                  onClick={() => setOpenIdx(isOpen ? null : idx)}
-                  className="w-full p-4 flex items-center justify-between text-left text-xs sm:text-sm font-semibold text-white hover:text-indigo-400 transition-colors"
+                  onClick={() => setOpenFaq(isOpen ? null : idx)}
+                  className="w-full flex items-center justify-between text-left font-semibold text-xs text-[#0F0F0F]"
                 >
                   <span>{faq.q}</span>
-                  {isOpen ? (
-                    <ChevronUp className="w-4 h-4 text-indigo-400 shrink-0 ml-2" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-slate-400 shrink-0 ml-2" />
-                  )}
+                  {isOpen ? <ChevronUp className="w-4 h-4 text-[#606060]" /> : <ChevronDown className="w-4 h-4 text-[#606060]" />}
                 </button>
                 {isOpen && (
-                  <div className="px-4 pb-4 text-xs text-slate-300 leading-relaxed border-t border-[#232733]/50 pt-3">
+                  <p className="mt-2 text-xs text-[#606060] leading-relaxed">
                     {faq.a}
-                  </div>
+                  </p>
                 )}
               </div>
             );
@@ -122,60 +71,32 @@ export default function HelpPage() {
         </div>
       </div>
 
-      {/* Send Feedback / Contact Support Form */}
-      <div className="bg-[#14161d] border border-[#232733] rounded-3xl p-6 sm:p-8 space-y-4 shadow-xl">
-        <div className="flex items-center gap-2 text-white">
-          <MessageSquare className="w-5 h-5 text-pink-400" />
-          <h2 className="text-lg font-bold">Send Feedback or Report an Issue</h2>
-        </div>
-        <p className="text-xs text-slate-400">
-          Our engineering team reviews community bug reports and feature suggestions daily.
-        </p>
+      {/* Send Feedback Form */}
+      <div className="bg-[#F9F9F9] border border-[#E5E5E5] rounded-2xl p-6 space-y-4 shadow-sm">
+        <h2 className="text-base font-bold flex items-center gap-2">
+          <MessageSquare className="w-5 h-5 text-[#065FD4]" />
+          Send feedback to VIONEX
+        </h2>
+        <p className="text-xs text-[#606060]">Have a suggestion, bug report, or feature request? We read every submission.</p>
 
-        <form onSubmit={handleSubmitFeedback} className="space-y-4 max-w-xl">
-          <div className="flex gap-2">
-            {[
-              { id: 'bug', label: 'Bug Report' },
-              { id: 'feature', label: 'Feature Request' },
-              { id: 'playback', label: 'Playback Issue' }
-            ].map((type) => (
-              <button
-                key={type.id}
-                type="button"
-                onClick={() => setFeedbackCategory(type.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors ${
-                  feedbackCategory === type.id
-                    ? 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/20'
-                    : 'bg-[#181a24] text-slate-400 border-[#232733] hover:text-white'
-                }`}
-              >
-                {type.label}
-              </button>
-            ))}
-          </div>
-
+        <form onSubmit={handleSubmitFeedback} className="space-y-3">
           <textarea
             rows={4}
             required
-            placeholder="Describe what happened, steps to reproduce, or your suggestion..."
-            value={feedbackMessage}
-            onChange={(e) => setFeedbackMessage(e.target.value)}
-            className="w-full p-4 bg-[#0b0c10] border border-[#232733] focus:border-indigo-500 rounded-2xl text-xs text-white focus:outline-none transition-colors"
+            placeholder="Describe your issue or share your ideas..."
+            value={feedback}
+            onChange={(e) => setFeedback(e.target.value)}
+            className="w-full p-3 rounded-xl border border-[#CCCCCC] bg-white outline-none text-xs text-[#0F0F0F]"
           />
-
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] text-[#909090]">Screenshots and system metrics are automatically attached.</span>
             <button
               type="submit"
-              className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white shadow-lg shadow-indigo-600/20 transition-all"
+              className="px-5 py-2 rounded-full bg-[#065FD4] hover:bg-[#0551B5] text-white text-xs font-semibold flex items-center gap-1.5 transition-colors"
             >
-              <Send className="w-4 h-4" />
-              <span>Submit Report</span>
+              {sent ? <Check className="w-4 h-4" /> : <Send className="w-4 h-4" />}
+              <span>{sent ? 'Sent! Thank you' : 'Send Feedback'}</span>
             </button>
-            {submitted && (
-              <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1.5 animate-fadeIn">
-                <CheckCircle className="w-4 h-4" /> Thank you! Your report has been submitted.
-              </span>
-            )}
           </div>
         </form>
       </div>
