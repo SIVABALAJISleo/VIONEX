@@ -40,7 +40,6 @@ interface PlayerProps {
   onEnded?: () => void;
 }
 
-const DEFAULT_DEMO_STREAM = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
 
 const SAMPLE_SUBTITLES = [
   { start: 1, end: 5, text: 'Welcome to VIONEX - Next-Gen High Performance Video Platform' },
@@ -113,9 +112,10 @@ export default function Player({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
 
   const hlsRef = useRef<Hls | null>(null);
-  const effectiveSrc = !src || src.startsWith('/hls/') ? DEFAULT_DEMO_STREAM : src;
+  const effectiveSrc = src;
 
   // Initialize Web Audio API for Studio Audio Normalization & High Volume Boost
   const setupWebAudio = useCallback(() => {
@@ -304,12 +304,19 @@ export default function Player({
         if (data.fatal) {
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
-              hls.startLoad();
+              if (data.response && (data.response.code === 404 || data.response.code === 403)) {
+                setPlaybackError('Stream manifest unavailable or still transcoding (HTTP ' + data.response.code + '). Please retry shortly.');
+                setIsLoading(false);
+              } else {
+                hls.startLoad();
+              }
               break;
             case Hls.ErrorTypes.MEDIA_ERROR:
               hls.recoverMediaError();
               break;
             default:
+              setPlaybackError('Playback error: ' + (data.details || 'Stream unreachable'));
+              setIsLoading(false);
               hls.destroy();
               break;
           }
@@ -614,6 +621,34 @@ export default function Player({
           <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#FF0000] text-white flex items-center justify-center shadow-2xl transform hover:scale-110 active:scale-95 transition-transform">
             <Play className="w-8 h-8 sm:w-10 sm:h-10 fill-white ml-1.5" />
           </div>
+        </div>
+      )}
+
+      
+      {/* Explicit Playback Error Overlay (Section 14: No Fake Demo Mux Fallback) */}
+      {playbackError && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/95 text-white p-6 text-center select-none backdrop-blur-sm">
+          <div className="w-16 h-16 rounded-full bg-red-600/20 border border-red-600/50 flex items-center justify-center mb-4 text-[#FF0000] shadow-xl">
+            <AlertCircle className="w-8 h-8" />
+          </div>
+          <h3 className="text-xl font-bold mb-2 tracking-tight">Video Unavailable</h3>
+          <p className="text-sm text-neutral-400 max-w-md mb-6 leading-relaxed">
+            {playbackError}
+          </p>
+          <button
+            onClick={() => {
+              setPlaybackError(null);
+              setIsLoading(true);
+              if (hlsRef.current) {
+                hlsRef.current.destroy();
+                hlsRef.current = null;
+              }
+            }}
+            className="px-6 py-2.5 rounded-full bg-[#FF0000] hover:bg-red-700 text-white text-sm font-semibold transition-all transform hover:scale-105 active:scale-95 shadow-lg flex items-center gap-2"
+          >
+            <RotateCcw className="w-4 h-4" />
+            <span>Retry Playback</span>
+          </button>
         </div>
       )}
 
