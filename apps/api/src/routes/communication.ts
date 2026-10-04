@@ -2,6 +2,17 @@ import { FastifyPluginAsync } from 'fastify';
 import { prisma } from '@vionex/database';
 import { LiveKitCallingAdapter, VionexCryptoEngine } from '@vionex/communication';
 
+// In-memory active pairing challenges and ephemeral E2EE envelope store
+const pairingChallenges = new Map<string, { userId: string; expiresAt: number }>();
+const e2eeEnvelopes: Array<{
+  id: string;
+  senderIdentityId: string;
+  recipientIdentityId: string;
+  roomId?: string;
+  payload: any;
+  timestamp: string;
+}> = [];
+
 export const communicationRoutes: FastifyPluginAsync = async (fastify) => {
   // Helper to authenticate user from session
   const getAuthUser = async (req: any, reply: any) => {
@@ -9,7 +20,6 @@ export const communicationRoutes: FastifyPluginAsync = async (fastify) => {
     const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : req.cookies?.vionex_session;
     
     if (!token) {
-      // Find or fallback to authenticated test/current user
       const defaultUser = await prisma.user.findFirst();
       if (!defaultUser) {
         reply.status(401).send({ error: 'UNAUTHORIZED', message: 'Authentication required' });
@@ -76,20 +86,77 @@ export const communicationRoutes: FastifyPluginAsync = async (fastify) => {
     });
   });
 
-  // 2. DEVICE MANAGEMENT & MULTI-DEVICE
+  // 2. DEVICE MANAGEMENT & MULTI-DEVICE QR LINKING
   fastify.get('/devices', async (req, reply) => {
     const user = await getAuthUser(req, reply);
     if (!user) return;
 
+    const targetUserId = (req.query as any)?.userId || user.id;
+
     const identity = await prisma.communicationIdentity.findUnique({
-      where: { userId: user.id },
+      where: { userId: targetUserId },
       include: { devices: true }
     });
 
     return reply.send({
       success: true,
+      identityId: identity?.id,
       devices: identity?.devices || []
     });
+  });
+
+  // Generate QR pairing token
+  fastify.post('/devices/link/init', async (req, reply) => {
+    const user = await getAuthUser(req, reply);
+    if (!user) return;
+
+    const pairingToken = `vlink-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+    pairingChallenges.set(pairingToken, {
+      userId: user.id,
+      expiresAt: Date.now() + 5 * 60 * 1000 // 5 minutes
+    });
+
+    return reply.send({
+      success: true,
+      pairingToken,
+      qrPayload: `vionex-link:${pairingToken}:${Date.now()}`,
+      expiresInSec: 300
+    });
+  });
+
+  // Companion device approves pairing
+  fastify.post('/devices/link/approve', async (req, reply) => {
+    const user = await getAuthUser(req, reply);
+    const body = req.body as any;
+    const { pairingToken, deviceName, platform, devicePublicKey } = body;
+
+    const challenge = pairingChallenges.get(pairingToken);
+    if (!challenge || challenge.expiresAt < Date.now()) {
+      return reply.status(400).send({ error: 'INVALID_OR_EXPIRED_PAIRING_TOKEN' });
+    }
+
+    pairingChallenges.delete(pairingToken);
+
+    const identity = await prisma.communicationIdentity.findUnique({
+      where: { userId: challenge.userId }
+    });
+
+    if (!identity) {
+      return reply.status(404).send({ error: 'IDENTITY_NOT_FOUND' });
+    }
+
+    const newDevice = await prisma.communicationDevice.create({
+      data: {
+        identityId: identity.id,
+        deviceId: `dev-${platform || 'mobile'}-${Date.now()}`,
+        deviceName: deviceName || 'Companion Device',
+        platform: platform || 'mobile',
+        status: 'VERIFIED',
+        crossSignedKey: devicePublicKey || null
+      }
+    });
+
+    return reply.send({ success: true, device: newDevice });
   });
 
   fastify.post('/devices/link', async (req, reply) => {
@@ -145,7 +212,51 @@ export const communicationRoutes: FastifyPluginAsync = async (fastify) => {
     return reply.send({ success: true, revokedDeviceId: deviceId });
   });
 
-  // 3. CALLING & LIVEKIT WEBRTC TOKENS
+  // 3. E2EE ENVELOPE MESSAGING EXCHANGE
+  fastify.post('/messages/envelope', async (req, reply) => {
+    const user = await getAuthUser(req, reply);
+    if (!user) return;
+
+    const body = req.body as any;
+    const { recipientId, roomId, encryptedPayload, messageType, contentCard } = body;
+
+    const identity = await prisma.communicationIdentity.findUnique({ where: { userId: user.id } });
+    if (!identity) return reply.status(404).send({ error: 'IDENTITY_NOT_FOUND' });
+
+    const envelope = {
+      id: `env-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+      senderIdentityId: identity.id,
+      recipientIdentityId: recipientId,
+      roomId: roomId || 'direct',
+      payload: {
+        encryptedPayload,
+        messageType: messageType || 'TEXT',
+        contentCard: contentCard || null
+      },
+      timestamp: new Date().toISOString()
+    };
+
+    e2eeEnvelopes.push(envelope);
+
+    return reply.send({ success: true, envelopeId: envelope.id, timestamp: envelope.timestamp });
+  });
+
+  fastify.get('/messages/envelope', async (req, reply) => {
+    const user = await getAuthUser(req, reply);
+    if (!user) return;
+
+    const { roomId } = req.query as any;
+    const identity = await prisma.communicationIdentity.findUnique({ where: { userId: user.id } });
+    if (!identity) return reply.send({ success: true, envelopes: [] });
+
+    const matching = e2eeEnvelopes.filter(env => 
+      (env.roomId === roomId || env.recipientIdentityId === identity.id || env.senderIdentityId === identity.id)
+    );
+
+    return reply.send({ success: true, envelopes: matching });
+  });
+
+  // 4. CALLING & LIVEKIT WEBRTC TOKENS
   fastify.post('/calls/token', async (req, reply) => {
     const user = await getAuthUser(req, reply);
     if (!user) return;
@@ -160,7 +271,6 @@ export const communicationRoutes: FastifyPluginAsync = async (fastify) => {
       name: user.displayName || user.username
     });
 
-    // Record Call Session
     const identity = await prisma.communicationIdentity.findUnique({ where: { userId: user.id } });
     if (identity) {
       await prisma.callSession.upsert({
@@ -236,7 +346,7 @@ export const communicationRoutes: FastifyPluginAsync = async (fastify) => {
     return reply.send({ success: true, calls });
   });
 
-  // 4. 24-HOUR EPHEMERAL STATUS
+  // 5. 24-HOUR EPHEMERAL STATUS
   fastify.post('/status', async (req, reply) => {
     const user = await getAuthUser(req, reply);
     if (!user) return;
@@ -247,7 +357,7 @@ export const communicationRoutes: FastifyPluginAsync = async (fastify) => {
     const body = req.body as any;
     const { text, mediaUrl, contentType, vionexRef } = body;
 
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours strictly
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // Exactly 24h
 
     const status = await prisma.status.create({
       data: {
@@ -267,7 +377,6 @@ export const communicationRoutes: FastifyPluginAsync = async (fastify) => {
     const user = await getAuthUser(req, reply);
     if (!user) return;
 
-    // Fetch non-expired status items
     const now = new Date();
     const statuses = await prisma.status.findMany({
       where: {
@@ -351,7 +460,7 @@ export const communicationRoutes: FastifyPluginAsync = async (fastify) => {
     return reply.send({ success: true });
   });
 
-  // 5. COMMUNITIES
+  // 6. COMMUNITIES
   fastify.get('/communities', async (req, reply) => {
     const communities = await prisma.community.findMany({
       include: {
@@ -412,7 +521,30 @@ export const communicationRoutes: FastifyPluginAsync = async (fastify) => {
     return reply.send({ success: true, community });
   });
 
-  // 6. CHANNELS BROADCAST
+  fastify.post('/communities/:id/join', async (req, reply) => {
+    const user = await getAuthUser(req, reply);
+    if (!user) return;
+
+    const { id } = req.params as { id: string };
+    const identity = await prisma.communicationIdentity.findUnique({ where: { userId: user.id } });
+    if (!identity) return reply.status(404).send({ error: 'IDENTITY_NOT_FOUND' });
+
+    const membership = await prisma.communityMember.upsert({
+      where: {
+        communityId_identityId: { communityId: id, identityId: identity.id }
+      },
+      create: {
+        communityId: id,
+        identityId: identity.id,
+        role: 'MEMBER'
+      },
+      update: {}
+    });
+
+    return reply.send({ success: true, membership });
+  });
+
+  // 7. BROADCAST CHANNELS
   fastify.get('/channels', async (req, reply) => {
     const channels = await prisma.channelBroadcast.findMany({
       include: {
@@ -466,7 +598,52 @@ export const communicationRoutes: FastifyPluginAsync = async (fastify) => {
     return reply.send({ success: true, channel });
   });
 
-  // 7. BUSINESS MESSAGING & CATALOG
+  fastify.post('/channels/:id/follow', async (req, reply) => {
+    const user = await getAuthUser(req, reply);
+    if (!user) return;
+
+    const { id } = req.params as { id: string };
+    const identity = await prisma.communicationIdentity.findUnique({ where: { userId: user.id } });
+    if (!identity) return reply.status(404).send({ error: 'IDENTITY_NOT_FOUND' });
+
+    const follow = await prisma.channelFollower.upsert({
+      where: {
+        channelId_identityId: { channelId: id, identityId: identity.id }
+      },
+      create: {
+        channelId: id,
+        identityId: identity.id
+      },
+      update: {}
+    });
+
+    return reply.send({ success: true, follow });
+  });
+
+  fastify.post('/channels/:id/posts', async (req, reply) => {
+    const user = await getAuthUser(req, reply);
+    if (!user) return;
+
+    const { id } = req.params as { id: string };
+    const body = req.body as any;
+
+    const channel = await prisma.channelBroadcast.findUnique({ where: { id } });
+    if (!channel || channel.ownerId !== user.id) {
+      return reply.status(403).send({ error: 'FORBIDDEN', message: 'Only channel owner can broadcast' });
+    }
+
+    const post = await prisma.channelPost.create({
+      data: {
+        channelId: id,
+        content: body.content,
+        mediaUrls: body.mediaUrls || []
+      }
+    });
+
+    return reply.send({ success: true, post });
+  });
+
+  // 8. BUSINESS MESSAGING & CATALOG
   fastify.get('/business', async (req, reply) => {
     const businesses = await prisma.businessAccount.findMany({
       include: {
@@ -497,6 +674,73 @@ export const communicationRoutes: FastifyPluginAsync = async (fastify) => {
           isAvailable: item.isAvailable
         }))
       }))
+    });
+  });
+
+  fastify.post('/business', async (req, reply) => {
+    const user = await getAuthUser(req, reply);
+    if (!user) return;
+
+    const identity = await prisma.communicationIdentity.findUnique({ where: { userId: user.id } });
+    if (!identity) return reply.status(404).send({ error: 'IDENTITY_NOT_FOUND' });
+
+    const body = req.body as any;
+    const { name, category, description, website, phone, catalogItems } = body;
+
+    const business = await prisma.businessAccount.upsert({
+      where: { identityId: identity.id },
+      create: {
+        identityId: identity.id,
+        name: name || user.displayName || user.username,
+        category: category || 'E-Commerce / Creator Merch',
+        description: description || 'Official VIONEX Creator Store',
+        website: website || 'https://vionex.tv',
+        phone: phone || '+1-555-VIONEX',
+        isVerified: true,
+        catalog: {
+          create: (catalogItems || [
+            { title: 'VIONEX Signature Hoodie', description: 'Heavyweight organic cotton, creator embroidered', priceCents: 6500, sku: 'VNX-HD-01' },
+            { title: 'Creator Studio 4K Stream Deck', description: 'Dedicated macro keys with OLED display', priceCents: 14900, sku: 'VNX-ST-02' }
+          ]).map((item: any) => ({
+            title: item.title,
+            description: item.description,
+            priceCents: item.priceCents,
+            sku: item.sku,
+            isAvailable: true
+          }))
+        }
+      },
+      update: {
+        name,
+        category,
+        description,
+        isVerified: true
+      },
+      include: { catalog: true }
+    });
+
+    return reply.send({ success: true, business });
+  });
+
+  fastify.post('/business/:id/inquiries', async (req, reply) => {
+    const user = await getAuthUser(req, reply);
+    if (!user) return;
+
+    const { id } = req.params as { id: string };
+    const { catalogItemId, inquiryText } = req.body as any;
+
+    const item = await prisma.businessCatalogItem.findUnique({ where: { id: catalogItemId } });
+
+    return reply.send({
+      success: true,
+      inquiry: {
+        id: `inq-${Date.now()}`,
+        businessId: id,
+        userId: user.id,
+        item: item ? { id: item.id, title: item.title, priceFormatted: `$${(item.priceCents / 100).toFixed(2)}` } : null,
+        inquiryText,
+        autoResponse: 'Thanks for inquiring! An agent from our team will respond shortly.'
+      }
     });
   });
 };
