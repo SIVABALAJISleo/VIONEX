@@ -153,7 +153,7 @@ export default function CreatorStudioPage() {
     setIsScanningContentID(true);
     setLiveScanResults(null);
     setTimeout(() => {
-      const results = ContentIDEngine.scanMediaAsset('audio-pcm-stream', 'video-frame-buffer');
+      const results = ContentIDEngine.scanMedia(scanTargetVideo || 'Next-Gen Video Infrastructure');
       setLiveScanResults(results);
       setIsScanningContentID(false);
     }, 1500);
