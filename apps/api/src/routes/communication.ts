@@ -1,5 +1,6 @@
 import { FastifyPluginAsync } from 'fastify';
 import { prisma } from '@vionex/database';
+import { AuthService } from '@vionex/auth';
 import { LiveKitCallingAdapter, VionexCryptoEngine } from '@vionex/communication';
 
 // In-memory active pairing challenges and ephemeral E2EE envelope store
@@ -14,31 +15,37 @@ const e2eeEnvelopes: Array<{
 }> = [];
 
 export const communicationRoutes: FastifyPluginAsync = async (fastify) => {
-  // Helper to authenticate user from session
+  // Helper to authenticate user from session or JWT
   const getAuthUser = async (req: any, reply: any) => {
     const authHeader = req.headers.authorization;
     const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : req.cookies?.vionex_session;
     
-    if (!token) {
-      const defaultUser = await prisma.user.findFirst();
-      if (!defaultUser) {
-        reply.status(401).send({ error: 'UNAUTHORIZED', message: 'Authentication required' });
-        return null;
+    if (token) {
+      try {
+        const payload = AuthService.verifyAccessToken(token);
+        if (payload?.userId) {
+          const user = await prisma.user.findUnique({ where: { id: payload.userId } });
+          if (user) return user;
+        }
+      } catch {}
+
+      const session = await prisma.userSession.findFirst({
+        where: { tokenHash: token, isRevoked: false },
+        include: { user: true }
+      });
+
+      if (session && session.expiresAt > new Date()) {
+        return session.user;
       }
-      return defaultUser;
     }
 
-    const session = await prisma.userSession.findFirst({
-      where: { tokenHash: token, isRevoked: false },
-      include: { user: true }
-    });
-
-    if (!session || session.expiresAt < new Date()) {
-      const defaultUser = await prisma.user.findFirst();
-      return defaultUser;
+    const defaultUser = await prisma.user.findFirst();
+    if (!defaultUser) {
+      reply.status(401).send({ error: 'UNAUTHORIZED', message: 'Authentication required' });
+      return null;
     }
 
-    return session.user;
+    return defaultUser;
   };
 
   // 1. BOOTSTRAP IDENTITY & PRIMARY DEVICE
@@ -60,7 +67,7 @@ export const communicationRoutes: FastifyPluginAsync = async (fastify) => {
           publicKeyFingerprint: keypair.publicKey.slice(0, 32),
           devices: {
             create: {
-              deviceId: `dev-web-${Date.now()}`,
+              deviceId: `dev-web-${Date.now()}-${Math.random().toString(36).substring(7)}`,
               deviceName: 'Chrome Web Client (Primary)',
               platform: 'web',
               status: 'VERIFIED',
@@ -126,7 +133,6 @@ export const communicationRoutes: FastifyPluginAsync = async (fastify) => {
 
   // Companion device approves pairing
   fastify.post('/devices/link/approve', async (req, reply) => {
-    const user = await getAuthUser(req, reply);
     const body = req.body as any;
     const { pairingToken, deviceName, platform, devicePublicKey } = body;
 
@@ -148,7 +154,7 @@ export const communicationRoutes: FastifyPluginAsync = async (fastify) => {
     const newDevice = await prisma.communicationDevice.create({
       data: {
         identityId: identity.id,
-        deviceId: `dev-${platform || 'mobile'}-${Date.now()}`,
+        deviceId: `dev-${platform || 'mobile'}-${Date.now()}-${Math.random().toString(36).substring(7)}`,
         deviceName: deviceName || 'Companion Device',
         platform: platform || 'mobile',
         status: 'VERIFIED',
@@ -178,7 +184,7 @@ export const communicationRoutes: FastifyPluginAsync = async (fastify) => {
     const newDevice = await prisma.communicationDevice.create({
       data: {
         identityId: identity.id,
-        deviceId: `dev-${platform}-${Date.now()}`,
+        deviceId: `dev-${platform}-${Date.now()}-${Math.random().toString(36).substring(7)}`,
         deviceName,
         platform,
         status: 'VERIFIED'
