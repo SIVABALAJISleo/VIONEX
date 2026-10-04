@@ -81,6 +81,24 @@ export interface CommentItem {
   timestamp: string;
   likes: number;
   isLiked?: boolean;
+  isPinned?: boolean;
+  replies?: {
+    id: string;
+    author: string;
+    avatar: string;
+    text: string;
+    timestamp: string;
+  }[];
+}
+
+export interface NotificationItem {
+  id: string;
+  title: string;
+  desc: string;
+  time: string;
+  unread: boolean;
+  avatar?: string;
+  videoId?: string;
 }
 
 export const INITIAL_VIDEOS: VideoItem[] = [
@@ -93,8 +111,8 @@ export const INITIAL_VIDEOS: VideoItem[] = [
     durationFormatted: '30:45',
     videoUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
     channel: {
-      handle: 'hyper-architect',
-      name: 'Hyper Architect',
+      handle: 'vionex-labs',
+      name: 'VIONEX Engineering',
       avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop',
       isVerified: true,
       subscribers: '425K subscribers',
@@ -148,53 +166,53 @@ export const INITIAL_VIDEOS: VideoItem[] = [
       handle: 'dev-ops-elite',
       name: 'DevOps Elite',
       avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=200&auto=format&fit=crop',
-      isVerified: false,
-      subscribers: '95K subscribers',
-      subscribersCount: 95000,
-      bannerUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1600&auto=format&fit=crop',
-      bio: 'Infrastructure, Kubernetes, containers, and media workloads.'
-    },
-    viewsCount: '45,300',
-    viewsNumeric: 45300,
-    likesCount: 610,
-    publishedAt: '1 week ago',
-    category: 'Technology',
-    tags: ['DevOps', 'FFmpeg', 'HLS', 'Transcoding'],
-    commentsCount: 54
-  },
-  {
-    id: 'vid-demo-004',
-    title: 'Ambient Electronic Synthesizer Jam Live from Neon Tokyo (4K 60FPS)',
-    description: 'Immersive modular synthesizer performance recorded live with binaural spatial audio in Shibuya. Relax, study, or code to deep cybernetic soundscapes.',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1280&auto=format&fit=crop',
-    duration: 3600,
-    durationFormatted: '1:00:00',
-    videoUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
-    channel: {
-      handle: 'synth-wave-collective',
-      name: 'Tokyo Synth Collective',
-      avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=200&auto=format&fit=crop',
       isVerified: true,
       subscribers: '310K subscribers',
       subscribersCount: 310000,
-      bannerUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1600&auto=format&fit=crop',
-      bio: 'Original ambient synth soundscapes and live studio sessions.'
+      bannerUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1600&auto=format&fit=crop',
+      bio: 'Cloud-native CI/CD, Kubernetes video rendering clusters, and media worker pipelines.'
     },
-    viewsCount: '312,000',
-    viewsNumeric: 31200,
-    likesCount: 4890,
+    viewsCount: '45,100',
+    viewsNumeric: 45100,
+    likesCount: 512,
+    publishedAt: '1 week ago',
+    category: 'Coding',
+    tags: ['FFmpeg', 'Transcoding', 'HLS', 'MediaWorker'],
+    commentsCount: 46
+  },
+  {
+    id: 'vid-demo-004',
+    title: 'Atmospheric Ambient Light & Canvas Shaders in HTML5 Video Players',
+    description: 'How to build the modern dynamic lighting glow around video players using hidden offscreen canvas downsampling and CSS blur filters at 60fps.',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?q=80&w=1280&auto=format&fit=crop',
+    duration: 890,
+    durationFormatted: '14:50',
+    videoUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
+    channel: {
+      handle: 'frontend-masters-lab',
+      name: 'Frontend Masters Lab',
+      avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=200&auto=format&fit=crop',
+      isVerified: true,
+      subscribers: '650K subscribers',
+      subscribersCount: 650000,
+      bannerUrl: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=1600&auto=format&fit=crop',
+      bio: 'Crafting pixel-perfect animations, canvas rendering engines, and cutting-edge user interfaces.'
+    },
+    viewsCount: '215,800',
+    viewsNumeric: 215800,
+    likesCount: 3200,
     publishedAt: '3 days ago',
-    category: 'Music',
-    tags: ['Ambient', 'Synthesizer', 'CodingMusic', 'LiveSession'],
-    commentsCount: 284
+    category: 'Technology',
+    tags: ['Frontend', 'Canvas', 'WebGL', 'UIUX'],
+    commentsCount: 210
   },
   {
     id: 'vid-demo-005',
-    title: 'Cyberpunk 2077: Path Tracing Overhaul & Unreal Engine 5.5 Benchmark',
-    description: 'Full hardware analysis of next-gen neural rendering, full path tracing ray reconstruction, and volumetric fog performance across modern GPUs.',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1280&auto=format&fit=crop',
-    duration: 1420,
-    durationFormatted: '23:40',
+    title: 'Next-Gen Graphics Architecture: Path Tracing Hardware Deep Dive 2026',
+    description: 'A deep architectural dissection of modern GPU acceleration cores, hardware BVH traversal units, and neural reconstruction denoisers.',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1280&auto=format&fit=crop',
+    duration: 3200,
+    durationFormatted: '53:20',
     videoUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
     channel: {
       handle: 'hardware-benchmark',
@@ -249,8 +267,8 @@ export const INITIAL_VIDEOS: VideoItem[] = [
     durationFormatted: '35:20',
     videoUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
     channel: {
-      handle: 'hyper-architect',
-      name: 'Hyper Architect',
+      handle: 'vionex-labs',
+      name: 'VIONEX Engineering',
       avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop',
       isVerified: true,
       subscribers: '425K subscribers',
@@ -299,8 +317,8 @@ export const INITIAL_SHORTS: ShortItem[] = [
     id: 'short-001',
     title: '5 Git tricks every Senior Developer uses daily ⚡',
     channel: {
-      name: 'Hyper Architect',
-      handle: 'hyper-architect',
+      name: 'VIONEX Engineering',
+      handle: 'vionex-labs',
       avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop',
       isVerified: true
     },
@@ -314,7 +332,7 @@ export const INITIAL_SHORTS: ShortItem[] = [
   },
   {
     id: 'short-002',
-    title: 'Why HTTP/3 and QUIC change Web Streaming forever 🌐',
+    title: 'Why HTTP/3 and QUIC change Web Streaming forever 🚀',
     channel: {
       name: 'Stream Engineering Lab',
       handle: 'stream-engineering',
@@ -331,7 +349,7 @@ export const INITIAL_SHORTS: ShortItem[] = [
   },
   {
     id: 'short-003',
-    title: 'Insane Ray Tracing physics demonstration in Unreal 5.5 🎮',
+    title: 'Insane Ray Tracing physics demonstration in Unreal 5.5 🔥',
     channel: {
       name: 'Hardware Foundry',
       handle: 'hardware-benchmark',
@@ -370,8 +388,8 @@ export const INITIAL_LIVE_STREAMS: LiveStreamItem[] = [
     id: 'live-001',
     title: '🔴 Coding VIONEX Live: Adding Peer-to-Peer WebRTC DataChannel Swarms',
     channel: {
-      name: 'Hyper Architect',
-      handle: 'hyper-architect',
+      name: 'VIONEX Engineering',
+      handle: 'vionex-labs',
       avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop',
       isVerified: true
     },
@@ -382,7 +400,7 @@ export const INITIAL_LIVE_STREAMS: LiveStreamItem[] = [
     streamUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
     startedAt: 'Started 42 minutes ago',
     chatMessages: [
-      { id: 'c1', author: 'CodeNinja', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop', message: 'The WebRTC fallback circuit breaker is brilliant! 🔥', timestamp: '17:02' },
+      { id: 'c1', author: 'CodeNinja', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop', message: 'The WebRTC fallback circuit breaker is brilliant! 🚀', timestamp: '17:02' },
       { id: 'c2', author: 'FrontendDev_99', avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?q=80&w=100&auto=format&fit=crop', message: 'What is the buffer threshold before falling back to CDN origin?', timestamp: '17:03' },
       { id: 'c3', author: 'Alex_Streams', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=100&auto=format&fit=crop', message: 'Sent a $20 Super Chat! Love the architecture breakdown!', timestamp: '17:04', isSuperChat: true, amount: '$20.00' },
       { id: 'c4', author: 'Elena_V', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=100&auto=format&fit=crop', message: 'Audio quality is so crisp today.', timestamp: '17:05' }
@@ -402,67 +420,65 @@ export const INITIAL_LIVE_STREAMS: LiveStreamItem[] = [
     category: 'Gaming',
     thumbnailUrl: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=1280&auto=format&fit=crop',
     streamUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
-    startedAt: 'Started 2 hours ago',
+    startedAt: 'Started 1 hour ago',
     chatMessages: [
-      { id: 'cg1', author: 'GamerX', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=100&auto=format&fit=crop', message: 'THAT CLUTCH PLAY WAS UNREAL!!! 😱', timestamp: '17:01' },
-      { id: 'cg2', author: 'ProViper', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=100&auto=format&fit=crop', message: 'Team Alpha is definitely taking map 3.', timestamp: '17:02' }
-    ]
-  },
-  {
-    id: 'live-003',
-    title: '🔴 Lo-Fi Cyber Chill Radio 24/7 [beats to code / relax to]',
-    channel: {
-      name: 'Tokyo Synth Collective',
-      handle: 'synth-wave-collective',
-      avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=200&auto=format&fit=crop',
-      isVerified: true
-    },
-    viewers: '22,100',
-    viewersNumeric: 22100,
-    category: 'Music',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1280&auto=format&fit=crop',
-    streamUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
-    startedAt: 'Live 24/7',
-    chatMessages: [
-      { id: 'cm1', author: 'CoffeeLover', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=100&auto=format&fit=crop', message: 'Best stream to crush deadlines to ☕', timestamp: '17:00' }
+      { id: 'cg1', author: 'PixelKing', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=100&auto=format&fit=crop', message: 'WHAT A FLICK SHOT! Unbelievable precision!', timestamp: '17:10' },
+      { id: 'cg2', author: 'Nova_Gamer', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=100&auto=format&fit=crop', message: 'Gg to both teams, amazing set.', timestamp: '17:12' }
     ]
   }
 ];
 
 export const INITIAL_PLAYLISTS: PlaylistItem[] = [
   {
-    id: 'pl-favorites',
-    title: 'Favorites & Masterclasses',
-    description: 'Curated high performance system design and engineering videos.',
+    id: 'pl-001',
+    title: 'Modern Distributed Systems & Media Architectures',
+    description: 'Curated architectural tutorials on video pipelines, HLS transcoding, WebRTC peer swarming, and scalable databases.',
     videoCount: 4,
-    thumbnailUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop',
-    updatedAt: 'Updated today',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1280&auto=format&fit=crop',
+    updatedAt: 'Updated yesterday',
     isPrivate: false,
     videos: ['vid-demo-001', 'vid-demo-002', 'vid-demo-003', 'vid-demo-007']
   },
   {
-    id: 'pl-media-streaming',
-    title: 'Video Streaming & WebRTC Deep Dive',
-    description: 'HLS, DASH, RTMP, WebRTC, FFmpeg pipelines and protocol engineering.',
-    videoCount: 3,
-    thumbnailUrl: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=800&auto=format&fit=crop',
-    updatedAt: 'Updated 2 days ago',
-    isPrivate: false,
-    videos: ['vid-demo-001', 'vid-demo-002', 'vid-demo-003']
-  },
-  {
-    id: 'pl-chill-coding',
-    title: 'Coding Soundtracks & Ambient Electronics',
-    description: 'Deep focus music for engineering sessions.',
+    id: 'pl-002',
+    title: 'Frontend Masterclass & Canvas Shaders',
+    description: 'Deep dive into performant web styling, custom media controls, and GPU canvas effects.',
     videoCount: 2,
-    thumbnailUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=800&auto=format&fit=crop',
-    updatedAt: 'Updated last week',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?q=80&w=1280&auto=format&fit=crop',
+    updatedAt: 'Updated 3 days ago',
     isPrivate: false,
-    videos: ['vid-demo-004', 'vid-demo-006']
+    videos: ['vid-demo-004', 'vid-demo-001']
   }
 ];
 
-// In-Memory & LocalStorage Client Helpers
+export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
+  {
+    id: 'notif-1',
+    title: 'New Video from VIONEX Engineering',
+    desc: 'Deep Dive: WebRTC P2P Mesh with HLS Adaptive Bitrate is now streaming.',
+    time: '10m ago',
+    unread: true,
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop',
+    videoId: 'vid-demo-001'
+  },
+  {
+    id: 'notif-2',
+    title: 'Comment Hearted',
+    desc: 'Stream Engineering Lab gave your comment on HLS GOP Alignment a heart!',
+    time: '1h ago',
+    unread: true,
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop'
+  },
+  {
+    id: 'notif-3',
+    title: 'Studio Milestone Reached',
+    desc: 'Your channel surpassed 425,000 subscribers! View real-time analytics.',
+    time: '5h ago',
+    unread: false,
+    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200&auto=format&fit=crop'
+  }
+];
+
 const IS_SERVER = typeof window === 'undefined';
 
 export function getStoredVideos(): VideoItem[] {
@@ -470,7 +486,7 @@ export function getStoredVideos(): VideoItem[] {
   try {
     const raw = localStorage.getItem('vionex_custom_videos');
     if (raw) {
-      const custom = JSON.parse(raw) as VideoItem[];
+      const custom: VideoItem[] = JSON.parse(raw);
       return [...custom, ...INITIAL_VIDEOS];
     }
   } catch {}
@@ -481,13 +497,27 @@ export function saveCustomVideo(video: VideoItem) {
   if (IS_SERVER) return;
   try {
     const raw = localStorage.getItem('vionex_custom_videos');
-    const existing = raw ? JSON.parse(raw) : [];
-    localStorage.setItem('vionex_custom_videos', JSON.stringify([video, ...existing]));
+    const custom: VideoItem[] = raw ? JSON.parse(raw) : [];
+    localStorage.setItem('vionex_custom_videos', JSON.stringify([video, ...custom]));
   } catch {}
 }
 
-export function getHistory(): VideoItem[] {
-  if (IS_SERVER) return INITIAL_VIDEOS.slice(0, 4);
+export function deleteVideo(videoId: string): boolean {
+  if (IS_SERVER) return false;
+  try {
+    const raw = localStorage.getItem('vionex_custom_videos');
+    if (raw) {
+      const custom: VideoItem[] = JSON.parse(raw);
+      const filtered = custom.filter(v => v.id !== videoId);
+      localStorage.setItem('vionex_custom_videos', JSON.stringify(filtered));
+      return true;
+    }
+  } catch {}
+  return false;
+}
+
+export function getStoredHistory(): VideoItem[] {
+  if (IS_SERVER) return INITIAL_VIDEOS.slice(0, 3);
   try {
     const raw = localStorage.getItem('vionex_history');
     if (raw) {
@@ -496,12 +526,15 @@ export function getHistory(): VideoItem[] {
       return ids.map(id => all.find(v => v.id === id)).filter(Boolean) as VideoItem[];
     }
   } catch {}
-  return INITIAL_VIDEOS.slice(0, 4);
+  return INITIAL_VIDEOS.slice(0, 3);
 }
 
 export function addToHistory(video: VideoItem) {
   if (IS_SERVER) return;
   try {
+    const paused = localStorage.getItem('vionex_history_paused') === 'true';
+    if (paused) return;
+
     const raw = localStorage.getItem('vionex_history');
     const ids: string[] = raw ? JSON.parse(raw) : [];
     const filtered = ids.filter(id => id !== video.id);
@@ -523,6 +556,22 @@ export function removeFromHistory(videoId: string) {
     const ids: string[] = raw ? JSON.parse(raw) : [];
     localStorage.setItem('vionex_history', JSON.stringify(ids.filter(id => id !== videoId)));
   } catch {}
+}
+
+export function togglePauseHistory(): boolean {
+  if (IS_SERVER) return false;
+  try {
+    const current = localStorage.getItem('vionex_history_paused') === 'true';
+    localStorage.setItem('vionex_history_paused', (!current).toString());
+    return !current;
+  } catch {
+    return false;
+  }
+}
+
+export function isHistoryPaused(): boolean {
+  if (IS_SERVER) return false;
+  return localStorage.getItem('vionex_history_paused') === 'true';
 }
 
 export function getLikedVideos(): VideoItem[] {
@@ -624,18 +673,61 @@ export function savePlaylist(playlist: PlaylistItem) {
   if (IS_SERVER) return;
   try {
     const current = getPlaylists();
-    const updated = [playlist, ...current];
+    const updated = [playlist, ...current.filter(p => p.id !== playlist.id)];
     localStorage.setItem('vionex_playlists', JSON.stringify(updated));
   } catch {}
 }
 
+export function addVideoToPlaylist(playlistId: string, videoId: string): boolean {
+  if (IS_SERVER) return false;
+  try {
+    const current = getPlaylists();
+    const target = current.find(p => p.id === playlistId);
+    if (!target) return false;
+    if (!target.videos.includes(videoId)) {
+      target.videos.push(videoId);
+      target.videoCount = target.videos.length;
+      target.updatedAt = 'Just now';
+      localStorage.setItem('vionex_playlists', JSON.stringify(current));
+      return true;
+    }
+  } catch {}
+  return false;
+}
+
+export function removeVideoFromPlaylist(playlistId: string, videoId: string): boolean {
+  if (IS_SERVER) return false;
+  try {
+    const current = getPlaylists();
+    const target = current.find(p => p.id === playlistId);
+    if (!target) return false;
+    target.videos = target.videos.filter(v => v !== videoId);
+    target.videoCount = target.videos.length;
+    target.updatedAt = 'Just now';
+    localStorage.setItem('vionex_playlists', JSON.stringify(current));
+    return true;
+  } catch {}
+  return false;
+}
+
+export function deletePlaylist(playlistId: string): boolean {
+  if (IS_SERVER) return false;
+  try {
+    const current = getPlaylists();
+    const filtered = current.filter(p => p.id !== playlistId);
+    localStorage.setItem('vionex_playlists', JSON.stringify(filtered));
+    return true;
+  } catch {}
+  return false;
+}
+
 export function getSubscriptions(): string[] {
-  if (IS_SERVER) return ['hyper-architect', 'stream-engineering'];
+  if (IS_SERVER) return ['vionex-labs', 'stream-engineering'];
   try {
     const raw = localStorage.getItem('vionex_subscriptions');
     if (raw) return JSON.parse(raw);
   } catch {}
-  return ['hyper-architect', 'stream-engineering'];
+  return ['vionex-labs', 'stream-engineering'];
 }
 
 export function toggleSubscription(channelHandle: string): boolean {
@@ -649,4 +741,56 @@ export function toggleSubscription(channelHandle: string): boolean {
   } catch {
     return false;
   }
+}
+
+export function getNotifications(): NotificationItem[] {
+  if (IS_SERVER) return INITIAL_NOTIFICATIONS;
+  try {
+    const raw = localStorage.getItem('vionex_notifications');
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return INITIAL_NOTIFICATIONS;
+}
+
+export function markNotificationRead(id: string) {
+  if (IS_SERVER) return;
+  try {
+    const list = getNotifications();
+    const updated = list.map(n => n.id === id ? { ...n, unread: false } : n);
+    localStorage.setItem('vionex_notifications', JSON.stringify(updated));
+  } catch {}
+}
+
+export function markAllNotificationsRead() {
+  if (IS_SERVER) return;
+  try {
+    const list = getNotifications();
+    const updated = list.map(n => ({ ...n, unread: false }));
+    localStorage.setItem('vionex_notifications', JSON.stringify(updated));
+  } catch {}
+}
+
+export function getRecentSearches(): string[] {
+  if (IS_SERVER) return ['HLS adaptive streaming', 'Next.js 15 Fastify', 'Two-Tower DNN', 'WebRTC Datachannels'];
+  try {
+    const raw = localStorage.getItem('vionex_recent_searches');
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return ['HLS adaptive streaming', 'Next.js 15 Fastify', 'Two-Tower DNN', 'WebRTC Datachannels'];
+}
+
+export function addRecentSearch(query: string) {
+  if (IS_SERVER || !query.trim()) return;
+  try {
+    const current = getRecentSearches();
+    const filtered = current.filter(q => q.toLowerCase() !== query.toLowerCase());
+    localStorage.setItem('vionex_recent_searches', JSON.stringify([query, ...filtered].slice(0, 8)));
+  } catch {}
+}
+
+export function clearRecentSearches() {
+  if (IS_SERVER) return;
+  try {
+    localStorage.setItem('vionex_recent_searches', JSON.stringify([]));
+  } catch {}
 }

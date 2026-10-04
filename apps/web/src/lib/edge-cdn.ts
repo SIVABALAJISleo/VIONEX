@@ -1,5 +1,5 @@
 /**
- * VIONEX Global Hyper-Scale Edge CDN & Traffic Director
+ * VIONEX Global High-Scale Edge CDN & Traffic Director
  * Architectural equivalent of Google Global Cache (GGC) & Multi-Tier Edge CDN Caching Hierarchy.
  */
 
