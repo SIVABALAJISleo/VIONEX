@@ -429,17 +429,17 @@ export default function Player({
               ×
             </button>
           </div>
-          <div>Video ID: <span className="text-indigo-400">vid-prod-80p</span></div>
+          <div>Video ID: <span className="text-[#FF0000]">vid-prod-80p</span></div>
           <div>Viewport / Frames: <span>{videoRef.current ? `${videoRef.current.videoWidth}x${videoRef.current.videoHeight}` : '1920x1080'} / 60fps</span></div>
           <div>Current Rendition: <span className="text-green-400">{currentQuality === -1 ? 'Auto (1080p60)' : `${qualities.find(q=>q.id===currentQuality)?.height}p`}</span></div>
           <div>Codec: <span>avc1.640028 / mp4a.40.2</span></div>
           <div>Buffer Health: <span className="text-emerald-400">42.8 s</span></div>
           <div>Dropped Frames: <span>0 / 1442 (0.00%)</span></div>
           <div>Latency to Live: <span>1.84s (Ultra-Low)</span></div>
-          <div className="border-t border-[#2e3444] pt-1 mt-1 text-[10px] text-slate-400 font-bold">HYPER-SCALE TELEMETRY:</div>
+          <div className="border-t border-[#2e3444] pt-1 mt-1 text-[10px] text-slate-400 font-bold">HIGH-SCALE TELEMETRY:</div>
           <div>Edge CDN PoP: <span className="text-cyan-400 font-bold">VIONEX BOM-1 (11.4ms RTT)</span></div>
           <div>Edge Cache Status: <span className="text-emerald-400 font-bold">99.4% HIT (76.2% P2P Swarm)</span></div>
-          <div>Two-Tower AI Match: <span className="text-indigo-400 font-bold">0.942 (Semantic Cosine)</span></div>
+          <div>Two-Tower AI Match: <span className="text-[#FF0000] font-bold">0.942 (Semantic Cosine)</span></div>
           <div>Content ID Status: <span className="text-emerald-400 font-bold">Cleared (0 Infringements)</span></div>
         </div>
       )}
@@ -477,7 +477,7 @@ export default function Player({
               className="absolute -top-9 -translate-x-1/2 bg-black/90 text-white text-[10px] font-mono px-2 py-1 rounded shadow-lg pointer-events-none whitespace-nowrap z-20"
               style={{ left: `${hoverPosition}%` }}
             >
-              {hoverChapter && <span className="text-indigo-400 font-bold block">{hoverChapter}</span>}
+              {hoverChapter && <span className="text-[#FF0000] font-bold block">{hoverChapter}</span>}
               {formatTime(hoverTime)}
             </div>
           )}
@@ -489,7 +489,7 @@ export default function Player({
           <div className="flex items-center gap-3">
             <button
               onClick={togglePlay}
-              className="p-1 hover:text-indigo-400 transition-colors"
+              className="p-1 hover:text-[#FF0000] transition-colors"
               aria-label={isPlaying ? 'Pause (k)' : 'Play (k)'}
               title={isPlaying ? 'Pause (k)' : 'Play (k)'}
             >
@@ -503,7 +503,7 @@ export default function Player({
                   setIsMuted(!isMuted);
                 }
               }}
-              className="p-1 hover:text-indigo-400 transition-colors"
+              className="p-1 hover:text-[#FF0000] transition-colors"
               aria-label={isMuted ? 'Unmute (m)' : 'Mute (m)'}
               title={isMuted ? 'Unmute (m)' : 'Mute (m)'}
             >
@@ -521,7 +521,7 @@ export default function Player({
             <button
               onClick={() => setCaptionsEnabled(!captionsEnabled)}
               className={`p-1 transition-colors ${
-                captionsEnabled ? 'text-indigo-400 border-b-2 border-indigo-400' : 'text-slate-400 hover:text-white'
+                captionsEnabled ? 'text-[#FF0000] border-b-2 border-indigo-400' : 'text-slate-400 hover:text-white'
               }`}
               title="Closed Captions (c)"
               aria-label="Captions"
@@ -547,7 +547,7 @@ export default function Player({
                 setShowSettings(!showSettings);
                 setSettingsView('main');
               }}
-              className="p-1 hover:text-indigo-400 transition-colors"
+              className="p-1 hover:text-[#FF0000] transition-colors"
               title="Playback Settings"
               aria-label="Settings"
             >
@@ -595,7 +595,7 @@ export default function Player({
                         <RotateCcw className="w-4 h-4" />
                         <span>Loop Video</span>
                       </div>
-                      <span className="text-[11px] text-indigo-400">{isLooping ? 'On' : 'Off'}</span>
+                      <span className="text-[11px] text-[#FF0000]">{isLooping ? 'On' : 'Off'}</span>
                     </button>
 
                     <button
@@ -654,7 +654,7 @@ export default function Player({
                           setShowSettings(false);
                         }}
                         className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-semibold ${
-                          currentQuality === -1 ? 'bg-indigo-600 text-white' : 'hover:bg-[#1f232e] text-slate-300'
+                          currentQuality === -1 ? 'bg-[#FF0000] text-white' : 'hover:bg-[#1f232e] text-slate-300'
                         }`}
                       >
                         Auto (1080p60)
@@ -668,7 +668,7 @@ export default function Player({
                             setShowSettings(false);
                           }}
                           className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-semibold mt-0.5 ${
-                            currentQuality === q.id ? 'bg-indigo-600 text-white' : 'hover:bg-[#1f232e] text-slate-300'
+                            currentQuality === q.id ? 'bg-[#FF0000] text-white' : 'hover:bg-[#1f232e] text-slate-300'
                           }`}
                         >
                           {q.height}p ({Math.round(q.bitrate / 1000)}k)
@@ -696,7 +696,7 @@ export default function Player({
                             setShowSettings(false);
                           }}
                           className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-semibold mt-0.5 ${
-                            playbackSpeed === speed ? 'bg-indigo-600 text-white' : 'hover:bg-[#1f232e] text-slate-300'
+                            playbackSpeed === speed ? 'bg-[#FF0000] text-white' : 'hover:bg-[#1f232e] text-slate-300'
                           }`}
                         >
                           {speed === 1 ? 'Normal' : `${speed}x`}
@@ -711,7 +711,7 @@ export default function Player({
             {/* Miniplayer (i) */}
             <button
               onClick={() => setIsMiniplayer(true)}
-              className="p-1 hover:text-indigo-400 transition-colors"
+              className="p-1 hover:text-[#FF0000] transition-colors"
               title="Miniplayer (i)"
               aria-label="Miniplayer"
             >
@@ -722,7 +722,7 @@ export default function Player({
             <button
               onClick={() => setIsTheaterMode(!isTheaterMode)}
               className={`p-1 transition-colors ${
-                isTheaterMode ? 'text-indigo-400' : 'hover:text-indigo-400 text-white'
+                isTheaterMode ? 'text-[#FF0000]' : 'hover:text-[#FF0000] text-white'
               }`}
               title="Theater mode (t)"
               aria-label="Theater Mode"
@@ -733,7 +733,7 @@ export default function Player({
             {/* Fullscreen (f) */}
             <button
               onClick={toggleFullscreen}
-              className="p-1 hover:text-indigo-400 transition-colors"
+              className="p-1 hover:text-[#FF0000] transition-colors"
               title="Fullscreen (f)"
               aria-label="Fullscreen"
             >
