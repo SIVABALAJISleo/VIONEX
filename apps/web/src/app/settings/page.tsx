@@ -1,301 +1,200 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Settings, User, Sliders, Shield, Bell, Moon, Play, Check } from 'lucide-react';
+import { Settings, User, Bell, Play, Shield, Globe, Check } from 'lucide-react';
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<'account' | 'playback' | 'appearance' | 'privacy' | 'notifications'>('account');
-  const [displayName, setDisplayName] = useState('Creator');
-  const [handle, setHandle] = useState('creator');
-  const [bio, setBio] = useState('High performance video engineering and streaming enthusiast.');
-  const [savedSuccess, setSavedSuccess] = useState(false);
+  const [activeTab, setActiveTab] = useState<'account' | 'notifications' | 'playback' | 'privacy'>('account');
+  const [saved, setSaved] = useState(false);
 
-  // Settings states
-  const [autoplay, setAutoplay] = useState(true);
-  const [ambientMode, setAmbientMode] = useState(true);
-  const [p2pEnabled, setP2pEnabled] = useState(true);
-  const [highQuality, setHighQuality] = useState('auto');
+  // Settings State
+  const [ambientLight, setAmbientLight] = useState(true);
+  const [autoPlay, setAutoPlay] = useState(true);
+  const [defaultQuality, setDefaultQuality] = useState('1080p');
   const [emailNotifs, setEmailNotifs] = useState(true);
   const [desktopNotifs, setDesktopNotifs] = useState(true);
 
-  const handleSaveProfile = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 3000);
+  const handleSave = () => {
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
   };
 
-  const TABS = [
-    { id: 'account', label: 'Account & Profile', icon: User },
-    { id: 'playback', label: 'Playback & Streaming', icon: Play },
-    { id: 'appearance', label: 'Appearance & UI', icon: Moon },
-    { id: 'privacy', label: 'Privacy & Data', icon: Shield },
-    { id: 'notifications', label: 'Notifications', icon: Bell }
-  ];
-
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
-      {/* Top Header */}
-      <div className="border-b border-[#232733] pb-4">
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-          <Settings className="w-6 h-6 text-indigo-400" />
-          <span>Platform Settings</span>
+    <div className="max-w-5xl mx-auto p-4 sm:p-6 bg-white text-[#0F0F0F] min-h-[85vh] space-y-6">
+      <div className="pb-3 border-b border-[#E5E5E5]">
+        <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+          <Settings className="w-6 h-6 text-[#0F0F0F]" />
+          Settings
         </h1>
-        <p className="text-xs text-slate-400 mt-1">
-          Customize playback preferences, profile details, and notifications
-        </p>
       </div>
 
-      {/* Main Settings Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Settings Navigation Menu */}
-        <div className="space-y-1">
-          {TABS.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
+      <div className="flex flex-col md:flex-row gap-8 items-start">
+        {/* Left Navigation */}
+        <aside className="w-full md:w-56 space-y-1 shrink-0">
+          {[
+            { id: 'account', label: 'Account', icon: User },
+            { id: 'playback', label: 'Playback & performance', icon: Play },
+            { id: 'notifications', label: 'Notifications', icon: Bell },
+            { id: 'privacy', label: 'Privacy', icon: Shield }
+          ].map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
             return (
               <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                key={item.id}
+                onClick={() => setActiveTab(item.id as any)}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-left transition-colors ${
                   isActive
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                    : 'text-slate-400 hover:text-white hover:bg-[#181a24]'
+                    ? 'bg-[#F2F2F2] text-[#0F0F0F] font-bold'
+                    : 'text-[#606060] hover:bg-[#F9F9F9] hover:text-[#0F0F0F]'
                 }`}
               >
-                <Icon className="w-4 h-4 shrink-0" />
-                <span>{tab.label}</span>
+                <Icon className="w-4 h-4" />
+                <span>{item.label}</span>
               </button>
             );
           })}
-        </div>
+        </aside>
 
-        {/* Settings Form Body */}
-        <div className="md:col-span-3 bg-[#14161d] border border-[#232733] rounded-3xl p-6 shadow-xl">
+        {/* Right Settings Cards */}
+        <main className="flex-1 bg-[#F9F9F9] border border-[#E5E5E5] rounded-2xl p-6 space-y-6 text-xs text-[#0F0F0F]">
           {activeTab === 'account' && (
-            <form onSubmit={handleSaveProfile} className="space-y-6 max-w-xl">
-              <h2 className="text-lg font-bold text-white">Public Profile</h2>
-
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-indigo-600 to-pink-600 flex items-center justify-center font-bold text-white text-xl">
-                  {displayName[0]}
-                </div>
+            <div className="space-y-4">
+              <h2 className="text-base font-bold">Your Account</h2>
+              <div className="flex items-center gap-4 p-4 bg-white rounded-xl border border-[#E5E5E5]">
+                <img
+                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop"
+                  alt="Avatar"
+                  className="w-14 h-14 rounded-full object-cover"
+                />
                 <div>
-                  <button
-                    type="button"
-                    className="px-4 py-1.5 rounded-full bg-[#1f232e] hover:bg-[#282d3b] border border-[#2e3444] text-xs font-semibold text-white transition-colors"
-                  >
-                    Change Avatar
-                  </button>
-                  <p className="text-[11px] text-slate-500 mt-1">PNG, JPG or WebP (Max 2MB)</p>
+                  <h3 className="font-bold text-sm">VIONEX Engineering</h3>
+                  <p className="text-[#606060]">vionex-labs@vionex.local</p>
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-300">Display Name</label>
+              <div className="space-y-3 pt-2">
+                <div>
+                  <label className="font-bold block mb-1">Display Name</label>
                   <input
                     type="text"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#0b0c10] border border-[#232733] focus:border-indigo-500 rounded-xl text-xs text-white focus:outline-none"
+                    defaultValue="VIONEX Engineering"
+                    className="w-full max-w-md p-2 rounded-xl border border-[#CCCCCC] bg-white outline-none"
                   />
                 </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-300">Handle URL</label>
-                  <div className="flex items-center">
-                    <span className="px-3 py-2 bg-[#181a24] border border-r-0 border-[#232733] rounded-l-xl text-xs text-slate-500 font-mono">
-                      vionex.tv/@
-                    </span>
-                    <input
-                      type="text"
-                      value={handle}
-                      onChange={(e) => setHandle(e.target.value)}
-                      className="flex-1 px-3 py-2 bg-[#0b0c10] border border-[#232733] focus:border-indigo-500 rounded-r-xl text-xs text-white focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-300">Bio</label>
-                  <textarea
-                    rows={3}
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
-                    className="w-full p-3 bg-[#0b0c10] border border-[#232733] focus:border-indigo-500 rounded-xl text-xs text-white focus:outline-none"
+                <div>
+                  <label className="font-bold block mb-1">Channel Handle</label>
+                  <input
+                    type="text"
+                    defaultValue="@vionex-labs"
+                    className="w-full max-w-md p-2 rounded-xl border border-[#CCCCCC] bg-white outline-none"
                   />
                 </div>
               </div>
-
-              <div className="flex items-center gap-3 pt-3 border-t border-[#232733]">
-                <button
-                  type="submit"
-                  className="px-6 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-500 font-bold text-xs text-white shadow-lg shadow-indigo-600/20 transition-all"
-                >
-                  Save Changes
-                </button>
-                {savedSuccess && (
-                  <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1">
-                    <Check className="w-4 h-4" /> Preferences saved!
-                  </span>
-                )}
-              </div>
-            </form>
+            </div>
           )}
 
           {activeTab === 'playback' && (
-            <div className="space-y-6 max-w-xl">
-              <h2 className="text-lg font-bold text-white">Playback & Performance</h2>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 rounded-2xl bg-[#181a24] border border-[#232733]">
+            <div className="space-y-4">
+              <h2 className="text-base font-bold">Playback Settings</h2>
+              <div className="space-y-3">
+                <label className="flex items-center justify-between p-3 bg-white rounded-xl border border-[#E5E5E5] cursor-pointer">
                   <div>
-                    <h3 className="font-semibold text-xs text-white">Autoplay Next Video</h3>
-                    <p className="text-[11px] text-slate-400">Play the next recommended video automatically</p>
+                    <p className="font-bold">Ambient mode</p>
+                    <p className="text-[#606060]">Gently casts colors from the video into the background.</p>
                   </div>
-                  <button
-                    onClick={() => setAutoplay(!autoplay)}
-                    className={`w-11 h-6 rounded-full transition-colors relative ${
-                      autoplay ? 'bg-indigo-600' : 'bg-slate-700'
-                    }`}
-                  >
-                    <span className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${
-                      autoplay ? 'left-6' : 'left-1'
-                    }`} />
-                  </button>
-                </div>
+                  <input
+                    type="checkbox"
+                    checked={ambientLight}
+                    onChange={(e) => setAmbientLight(e.target.checked)}
+                    className="accent-[#065FD4] w-4 h-4"
+                  />
+                </label>
 
-                <div className="flex items-center justify-between p-3 rounded-2xl bg-[#181a24] border border-[#232733]">
+                <label className="flex items-center justify-between p-3 bg-white rounded-xl border border-[#E5E5E5] cursor-pointer">
                   <div>
-                    <h3 className="font-semibold text-xs text-white">WebRTC P2P-Assisted Streaming</h3>
-                    <p className="text-[11px] text-slate-400">Swarm video segments with nearby peers to lower latency and bandwidth</p>
+                    <p className="font-bold">Autoplay next video</p>
+                    <p className="text-[#606060]">When you finish a video, another plays automatically.</p>
                   </div>
-                  <button
-                    onClick={() => setP2pEnabled(!p2pEnabled)}
-                    className={`w-11 h-6 rounded-full transition-colors relative ${
-                      p2pEnabled ? 'bg-indigo-600' : 'bg-slate-700'
-                    }`}
-                  >
-                    <span className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${
-                      p2pEnabled ? 'left-6' : 'left-1'
-                    }`} />
-                  </button>
-                </div>
+                  <input
+                    type="checkbox"
+                    checked={autoPlay}
+                    onChange={(e) => setAutoPlay(e.target.checked)}
+                    className="accent-[#065FD4] w-4 h-4"
+                  />
+                </label>
 
-                <div className="space-y-1 pt-2">
-                  <label className="text-xs font-semibold text-slate-300">Default Streaming Quality</label>
+                <div className="p-3 bg-white rounded-xl border border-[#E5E5E5] space-y-2">
+                  <p className="font-bold">Default video quality</p>
                   <select
-                    value={highQuality}
-                    onChange={(e) => setHighQuality(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#0b0c10] border border-[#232733] rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
+                    value={defaultQuality}
+                    onChange={(e) => setDefaultQuality(e.target.value)}
+                    className="p-2 rounded-lg border border-[#CCCCCC] bg-white outline-none text-xs"
                   >
-                    <option value="auto">Auto (Adaptive Bitrate HLS)</option>
-                    <option value="1080p">High (1080p Full HD)</option>
-                    <option value="720p">Medium (720p HD)</option>
-                    <option value="480p">Data Saver (480p)</option>
+                    <option value="Auto">Auto (recommended)</option>
+                    <option value="1080p">High definition (1080p)</option>
+                    <option value="720p">Standard (720p)</option>
+                    <option value="480p">Data saver (480p)</option>
                   </select>
                 </div>
               </div>
             </div>
           )}
 
-          {activeTab === 'appearance' && (
-            <div className="space-y-6 max-w-xl">
-              <h2 className="text-lg font-bold text-white">Appearance & Display</h2>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 rounded-2xl bg-[#181a24] border border-[#232733]">
+          {activeTab === 'notifications' && (
+            <div className="space-y-4">
+              <h2 className="text-base font-bold">Notification Preferences</h2>
+              <div className="space-y-3">
+                <label className="flex items-center justify-between p-3 bg-white rounded-xl border border-[#E5E5E5] cursor-pointer">
                   <div>
-                    <h3 className="font-semibold text-xs text-white">Ambient Glow Lighting</h3>
-                    <p className="text-[11px] text-slate-400">Reflect video colors into the player surrounding background</p>
+                    <p className="font-bold">Desktop notifications</p>
+                    <p className="text-[#606060]">Get alerts on your device when subscribed channels upload.</p>
                   </div>
-                  <button
-                    onClick={() => setAmbientMode(!ambientMode)}
-                    className={`w-11 h-6 rounded-full transition-colors relative ${
-                      ambientMode ? 'bg-indigo-600' : 'bg-slate-700'
-                    }`}
-                  >
-                    <span className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${
-                      ambientMode ? 'left-6' : 'left-1'
-                    }`} />
-                  </button>
-                </div>
+                  <input
+                    type="checkbox"
+                    checked={desktopNotifs}
+                    onChange={(e) => setDesktopNotifs(e.target.checked)}
+                    className="accent-[#065FD4] w-4 h-4"
+                  />
+                </label>
 
-                <div className="p-4 rounded-2xl bg-[#0b0c10] border border-[#232733] space-y-2">
-                  <div className="text-xs font-semibold text-white">Active Theme: Cyber Dark (Default)</div>
-                  <p className="text-[11px] text-slate-400">
-                    VIONEX is built natively for OLED dark mode with reduced blue-light strain and tailored contrast.
-                  </p>
-                </div>
+                <label className="flex items-center justify-between p-3 bg-white rounded-xl border border-[#E5E5E5] cursor-pointer">
+                  <div>
+                    <p className="font-bold">Email activity updates</p>
+                    <p className="text-[#606060]">Receive summary digests of comments and channel stats.</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={emailNotifs}
+                    onChange={(e) => setEmailNotifs(e.target.checked)}
+                    className="accent-[#065FD4] w-4 h-4"
+                  />
+                </label>
               </div>
             </div>
           )}
 
           {activeTab === 'privacy' && (
-            <div className="space-y-6 max-w-xl">
-              <h2 className="text-lg font-bold text-white">Privacy & Account Security</h2>
-              <div className="space-y-3">
-                <button
-                  type="button"
-                  onClick={() => alert('Search history cleared!')}
-                  className="w-full text-left p-3 rounded-2xl bg-[#181a24] hover:bg-[#202330] border border-[#232733] transition-colors"
-                >
-                  <div className="text-xs font-semibold text-white">Clear Search History</div>
-                  <div className="text-[11px] text-slate-400">Delete all past search queries stored on this device</div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => alert('Diagnostic cookies reset!')}
-                  className="w-full text-left p-3 rounded-2xl bg-[#181a24] hover:bg-[#202330] border border-[#232733] transition-colors"
-                >
-                  <div className="text-xs font-semibold text-white">Reset Player Telemetry Cache</div>
-                  <div className="text-[11px] text-slate-400">Clear anonymous buffer health diagnostic logs</div>
-                </button>
+            <div className="space-y-4">
+              <h2 className="text-base font-bold">Privacy & Data</h2>
+              <div className="p-4 bg-white rounded-xl border border-[#E5E5E5] space-y-2">
+                <p className="font-bold">Subscriptions & Playlists</p>
+                <p className="text-[#606060]">Keep all my saved playlists private.</p>
+                <p className="text-[#606060]">Keep all my subscriptions private.</p>
               </div>
             </div>
           )}
 
-          {activeTab === 'notifications' && (
-            <div className="space-y-6 max-w-xl">
-              <h2 className="text-lg font-bold text-white">Notification Preferences</h2>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 rounded-2xl bg-[#181a24] border border-[#232733]">
-                  <div>
-                    <h3 className="font-semibold text-xs text-white">Desktop Push Notifications</h3>
-                    <p className="text-[11px] text-slate-400">Alert me when channels I follow go live</p>
-                  </div>
-                  <button
-                    onClick={() => setDesktopNotifs(!desktopNotifs)}
-                    className={`w-11 h-6 rounded-full transition-colors relative ${
-                      desktopNotifs ? 'bg-indigo-600' : 'bg-slate-700'
-                    }`}
-                  >
-                    <span className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${
-                      desktopNotifs ? 'left-6' : 'left-1'
-                    }`} />
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between p-3 rounded-2xl bg-[#181a24] border border-[#232733]">
-                  <div>
-                    <h3 className="font-semibold text-xs text-white">Email Digest</h3>
-                    <p className="text-[11px] text-slate-400">Weekly highlights from subscribed creators</p>
-                  </div>
-                  <button
-                    onClick={() => setEmailNotifs(!emailNotifs)}
-                    className={`w-11 h-6 rounded-full transition-colors relative ${
-                      emailNotifs ? 'bg-indigo-600' : 'bg-slate-700'
-                    }`}
-                  >
-                    <span className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${
-                      emailNotifs ? 'left-6' : 'left-1'
-                    }`} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+          <div className="pt-2 flex items-center justify-between">
+            <button
+              onClick={handleSave}
+              className="px-5 py-2 rounded-full bg-[#065FD4] hover:bg-[#0551B5] text-white font-semibold transition-colors flex items-center gap-1.5 shadow-sm"
+            >
+              {saved ? <Check className="w-4 h-4" /> : null}
+              <span>{saved ? 'Saved!' : 'Save Changes'}</span>
+            </button>
+          </div>
+        </main>
       </div>
     </div>
   );
