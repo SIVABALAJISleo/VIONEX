@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { prisma } from '@vionex/database';
 import { AuthService } from '@vionex/auth';
 import { RegisterSchema, LoginSchema } from '@vionex/validation';
+import { authenticate } from '../services/auth-middleware';
 
 export async function authRoutes(app: FastifyInstance) {
   app.post('/register', async (request, reply) => {
@@ -117,8 +118,56 @@ export async function authRoutes(app: FastifyInstance) {
     });
   });
 
+  // Section 9: Fix Logout - Revokes server session in PostgreSQL & clears cookie
   app.post('/logout', async (request, reply) => {
+    const authHeader = request.headers.authorization;
+    let token: string | undefined;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    } else if (request.cookies && (request.cookies as any).vionex_session) {
+      token = (request.cookies as any).vionex_session;
+    }
+
+    if (token) {
+      const payload = AuthService.verifyAccessToken(token);
+      if (payload && payload.sessionId) {
+        await AuthService.revokeSession(payload.sessionId).catch(() => {});
+      }
+    }
+
     reply.clearCookie('vionex_session', { path: '/' });
-    return reply.send({ success: true, message: 'Logged out successfully' });
+    return reply.send({
+      success: true,
+      message: 'Logged out successfully. Server session revoked.'
+    });
+  });
+
+  // User Profile
+  app.get('/me', { preHandler: [authenticate] }, async (request, reply) => {
+    const user = await prisma.user.findUnique({
+      where: { id: request.user!.userId },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        displayName: true,
+        role: true,
+        channels: {
+          select: {
+            id: true,
+            handle: true,
+            name: true,
+            avatarUrl: true
+          }
+        }
+      }
+    });
+
+    if (!user) {
+      return reply.status(404).send({ success: false, code: 'NOT_FOUND', message: 'User not found' });
+    }
+
+    return reply.send({ success: true, user });
   });
 }
