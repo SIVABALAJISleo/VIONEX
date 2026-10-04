@@ -1,7 +1,22 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ThumbsUp, ThumbsDown, MessageSquare, Share2, Music, Volume2, VolumeX, ChevronUp, ChevronDown, Check, Send, X } from 'lucide-react';
+import Link from 'next/link';
+import {
+  ThumbsUp,
+  ThumbsDown,
+  MessageSquare,
+  Share2,
+  Music,
+  Volume2,
+  VolumeX,
+  ChevronUp,
+  ChevronDown,
+  Check,
+  Send,
+  X,
+  MoreVertical
+} from 'lucide-react';
 import { INITIAL_SHORTS, ShortItem } from '@/lib/data';
 
 export default function ShortsPage() {
@@ -73,204 +88,197 @@ export default function ShortsPage() {
 
   const handleShare = () => {
     if (typeof window !== 'undefined') {
-      navigator.clipboard?.writeText(window.location.href);
+      navigator.clipboard.writeText(window.location.href);
       setCopiedShare(true);
-      setTimeout(() => setCopiedShare(false), 2500);
+      setTimeout(() => setCopiedShare(false), 2000);
     }
   };
 
   const handleAddComment = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim()) return;
-
     const item = {
-      id: 'c-' + Date.now(),
+      id: `c-${Date.now()}`,
       author: 'You',
       text: newComment.trim(),
       time: 'Just now'
     };
-
     setCommentsList((prev) => ({
       ...prev,
-      [currentShort.id]: [...(prev[currentShort.id] || []), item]
+      [currentShort.id]: [item, ...(prev[currentShort.id] || [])]
     }));
     setNewComment('');
   };
 
-  const currentLikes = likesState[currentShort.id] || { count: currentShort.likesCount, isLiked: false };
+  const currentLikes = likesState[currentShort.id] || { count: 1000, isLiked: false };
   const currentComments = commentsList[currentShort.id] || [];
 
   return (
-    <div className="flex justify-center items-center min-h-[calc(100vh-3.5rem)] py-4 relative">
-      <div className="flex items-center gap-4">
-        {/* 9:16 Vertical Video Frame */}
-        <div className="relative aspect-9/16 h-[82vh] max-h-[820px] bg-black rounded-3xl overflow-hidden border border-[#232733] shadow-2xl flex items-center justify-center">
-          {/* Real Video Element */}
+    <div className="flex items-center justify-center min-h-[calc(100vh-56px)] bg-[#F9F9F9] py-4 select-none">
+      <div className="relative flex items-end justify-center gap-4 max-w-lg w-full">
+        {/* Navigation Arrow Up */}
+        <button
+          onClick={goPrev}
+          className="hidden sm:flex absolute -top-12 left-1/2 -translate-x-1/2 p-2 rounded-full bg-white border border-[#E5E5E5] hover:bg-[#F2F2F2] shadow-sm text-[#0F0F0F] transition-all"
+          title="Previous Short (Up Arrow)"
+        >
+          <ChevronUp className="w-5 h-5" />
+        </button>
+
+        {/* Vertical Video Viewport */}
+        <div className="relative w-[340px] sm:w-[380px] h-[580px] sm:h-[640px] rounded-2xl overflow-hidden bg-black shadow-xl border border-[#E5E5E5]">
           <video
             ref={videoRef}
-            src="https://assets.mixkit.co/videos/preview/mixkit-circuit-board-microchip-computer-technology-43285-large.mp4"
-            loop
-            autoPlay
-            playsInline
-            muted={isMuted}
+            src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
             className="w-full h-full object-cover"
+            autoPlay
+            loop
+            muted={isMuted}
+            playsInline
           />
 
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/30 pointer-events-none" />
-
-          {/* Sound Toggle Button */}
-          <button
-            onClick={() => setIsMuted(!isMuted)}
-            className="absolute top-4 right-4 z-30 p-2.5 rounded-full bg-black/60 backdrop-blur-md text-white hover:bg-black/80 transition-colors shadow-lg"
-            title={isMuted ? 'Unmute' : 'Mute'}
-          >
-            {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5 text-indigo-400" />}
-          </button>
-
-          {/* Index Indicator */}
-          <div className="absolute top-4 left-4 z-30 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-xs font-mono font-semibold border border-white/10">
-            {currentIndex + 1} / {INITIAL_SHORTS.length}
+          {/* Top Overlay: Sound Toggle */}
+          <div className="absolute top-4 right-4 z-10">
+            <button
+              onClick={() => setIsMuted(!isMuted)}
+              className="p-2.5 rounded-full bg-black/60 backdrop-blur-md text-white hover:bg-black/80 transition-colors"
+            >
+              {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+            </button>
           </div>
 
-          {/* Creator Attribution Bottom Overlay */}
-          <div className="absolute bottom-6 left-4 right-16 z-20 space-y-2">
-            <div className="flex items-center gap-2">
-              <img
-                src={currentShort.channel.avatarUrl}
-                alt={currentShort.channel.name}
-                className="w-9 h-9 rounded-full object-cover border-2 border-indigo-500"
-              />
-              <span className="font-bold text-sm text-white drop-shadow-md">
-                @{currentShort.channel.handle}
-              </span>
-              <button className="px-3 py-1 rounded-full bg-white text-black font-bold text-xs hover:bg-slate-200 transition-colors shadow-md">
-                Follow
+          {/* Bottom Info Overlay */}
+          <div className="absolute bottom-4 left-4 right-4 z-10 space-y-3 text-white">
+            {/* Channel Info */}
+            <div className="flex items-center justify-between">
+              <Link href={`/channel/${currentShort.channel.handle}`} className="flex items-center gap-2">
+                <img
+                  src={currentShort.channel.avatarUrl}
+                  alt={currentShort.channel.name}
+                  className="w-9 h-9 rounded-full object-cover border border-white/40"
+                />
+                <span className="font-bold text-xs drop-shadow truncate max-w-[160px]">
+                  @{currentShort.channel.handle}
+                </span>
+              </Link>
+              <button className="px-3.5 py-1.5 rounded-full bg-white hover:bg-white/90 text-black text-xs font-bold shadow-md transition-colors">
+                Subscribe
               </button>
             </div>
 
-            <h2 className="text-sm sm:text-base font-bold text-white drop-shadow-md leading-snug line-clamp-2">
+            {/* Title & Tags */}
+            <p className="text-xs font-medium line-clamp-2 drop-shadow leading-snug">
               {currentShort.title}
-            </h2>
+            </p>
 
-            <div className="flex items-center gap-1.5 text-xs text-slate-300 drop-shadow">
-              <Music className="w-3.5 h-3.5 text-pink-400 shrink-0" />
+            {/* Audio Info */}
+            <div className="flex items-center gap-2 text-[11px] text-white/90">
+              <Music className="w-3.5 h-3.5 shrink-0" />
               <span className="truncate">{currentShort.musicTitle}</span>
             </div>
           </div>
+        </div>
 
-          {/* Floating Action Rail on Right */}
-          <div className="absolute right-3 bottom-8 flex flex-col items-center gap-4 z-20 text-white">
-            {/* Like */}
+        {/* Right Interaction Rail (YouTube Style) */}
+        <div className="flex flex-col items-center gap-4 pb-2">
+          {/* Like */}
+          <div className="flex flex-col items-center gap-1">
             <button
               onClick={() => toggleLike(currentShort.id)}
-              className="flex flex-col items-center gap-1 group"
-            >
-              <div className={`w-11 h-11 rounded-full flex items-center justify-center backdrop-blur-md transition-all shadow-lg ${
+              className={`p-3 rounded-full transition-all ${
                 currentLikes.isLiked
-                  ? 'bg-pink-600 text-white scale-110'
-                  : 'bg-black/60 text-white hover:bg-white/20'
-              }`}>
-                <ThumbsUp className={`w-5 h-5 ${currentLikes.isLiked ? 'fill-white' : ''}`} />
-              </div>
-              <span className="text-[11px] font-semibold">{currentLikes.count.toLocaleString()}</span>
+                  ? 'bg-[#FF0000] text-white shadow-md'
+                  : 'bg-white hover:bg-[#F2F2F2] border border-[#E5E5E5] text-[#0F0F0F]'
+              }`}
+            >
+              <ThumbsUp className={`w-5 h-5 ${currentLikes.isLiked ? 'fill-white' : ''}`} />
             </button>
+            <span className="text-[11px] font-semibold text-[#0F0F0F]">
+              {currentLikes.count.toLocaleString()}
+            </span>
+          </div>
 
-            {/* Dislike */}
-            <button className="flex flex-col items-center gap-1">
-              <div className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-colors shadow-lg">
-                <ThumbsDown className="w-5 h-5" />
-              </div>
-              <span className="text-[11px] font-semibold">Dislike</span>
+          {/* Dislike */}
+          <div className="flex flex-col items-center gap-1">
+            <button className="p-3 rounded-full bg-white hover:bg-[#F2F2F2] border border-[#E5E5E5] text-[#0F0F0F] transition-all">
+              <ThumbsDown className="w-5 h-5" />
             </button>
+            <span className="text-[11px] font-semibold text-[#0F0F0F]">Dislike</span>
+          </div>
 
-            {/* Comments */}
+          {/* Comments */}
+          <div className="flex flex-col items-center gap-1">
             <button
               onClick={() => setShowComments(!showComments)}
-              className="flex flex-col items-center gap-1"
+              className="p-3 rounded-full bg-white hover:bg-[#F2F2F2] border border-[#E5E5E5] text-[#0F0F0F] transition-all"
             >
-              <div className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-colors shadow-lg">
-                <MessageSquare className="w-5 h-5" />
-              </div>
-              <span className="text-[11px] font-semibold">{currentComments.length + 120}</span>
+              <MessageSquare className="w-5 h-5" />
             </button>
-
-            {/* Share */}
-            <button onClick={handleShare} className="flex flex-col items-center gap-1 relative">
-              <div className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-colors shadow-lg">
-                <Share2 className="w-5 h-5" />
-              </div>
-              <span className="text-[11px] font-semibold">Share</span>
-              {copiedShare && (
-                <div className="absolute right-12 top-2 px-2.5 py-1 rounded-lg bg-indigo-600 text-white text-[10px] font-bold whitespace-nowrap shadow-xl flex items-center gap-1">
-                  <Check className="w-3 h-3" /> Copied!
-                </div>
-              )}
-            </button>
+            <span className="text-[11px] font-semibold text-[#0F0F0F]">
+              {currentComments.length}
+            </span>
           </div>
-        </div>
 
-        {/* Up / Down Navigation Controls */}
-        <div className="hidden sm:flex flex-col gap-3">
-          <button
-            onClick={goPrev}
-            className="w-12 h-12 rounded-full bg-[#14161d] hover:bg-[#1f232e] border border-[#232733] text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-xl"
-            title="Previous Short (Up Arrow)"
-          >
-            <ChevronUp className="w-6 h-6" />
-          </button>
+          {/* Share */}
+          <div className="flex flex-col items-center gap-1">
+            <button
+              onClick={handleShare}
+              className="p-3 rounded-full bg-white hover:bg-[#F2F2F2] border border-[#E5E5E5] text-[#0F0F0F] transition-all"
+            >
+              {copiedShare ? <Check className="w-5 h-5 text-[#065FD4]" /> : <Share2 className="w-5 h-5" />}
+            </button>
+            <span className="text-[11px] font-semibold text-[#0F0F0F]">
+              {copiedShare ? 'Copied' : 'Share'}
+            </span>
+          </div>
+
+          {/* Down Arrow Navigation */}
           <button
             onClick={goNext}
-            className="w-12 h-12 rounded-full bg-[#14161d] hover:bg-[#1f232e] border border-[#232733] text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-xl"
+            className="p-3 rounded-full bg-white hover:bg-[#F2F2F2] border border-[#E5E5E5] text-[#0F0F0F] transition-all"
             title="Next Short (Down Arrow)"
           >
-            <ChevronDown className="w-6 h-6" />
+            <ChevronDown className="w-5 h-5" />
           </button>
         </div>
-      </div>
 
-      {/* Sliding Comments Drawer */}
-      {showComments && (
-        <div className="fixed inset-y-0 right-0 w-full sm:w-96 bg-[#14161d] border-l border-[#232733] shadow-2xl z-50 flex flex-col">
-          <div className="p-4 border-b border-[#232733] flex items-center justify-between">
-            <h3 className="font-bold text-sm text-white">Comments</h3>
-            <button
-              onClick={() => setShowComments(false)}
-              className="p-1 text-slate-400 hover:text-white"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+        {/* Sliding Comments Drawer */}
+        {showComments && (
+          <div className="absolute inset-0 bg-white z-20 rounded-2xl p-4 flex flex-col justify-between shadow-2xl border border-[#E5E5E5]">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E5E5E5]">
+              <span className="font-bold text-sm text-[#0F0F0F]">Comments ({currentComments.length})</span>
+              <button onClick={() => setShowComments(false)} className="text-[#606060] hover:text-[#0F0F0F]">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-          <div className="flex-1 p-4 overflow-y-auto space-y-3">
-            {currentComments.map((c) => (
-              <div key={c.id} className="p-3 rounded-xl bg-[#181a24] space-y-1">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-indigo-400">{c.author}</span>
-                  <span className="text-[10px] text-slate-500">{c.time}</span>
+            <div className="flex-1 overflow-y-auto space-y-3 py-3 divide-y divide-[#E5E5E5]">
+              {currentComments.map((c) => (
+                <div key={c.id} className="pt-2 text-xs text-[#0F0F0F] space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-[#0F0F0F]">{c.author}</span>
+                    <span className="text-[#606060] text-[10px]">{c.time}</span>
+                  </div>
+                  <p>{c.text}</p>
                 </div>
-                <p className="text-xs text-slate-200">{c.text}</p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
 
-          <form onSubmit={handleAddComment} className="p-3 border-t border-[#232733] flex gap-2">
-            <input
-              type="text"
-              placeholder="Add a comment..."
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              className="flex-1 px-3 py-2 bg-[#0b0c10] border border-[#232733] rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
-            />
-            <button
-              type="submit"
-              disabled={!newComment.trim()}
-              className="px-3.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white rounded-xl flex items-center justify-center"
-            >
-              <Send className="w-4 h-4" />
-            </button>
-          </form>
-        </div>
-      )}
+            <form onSubmit={handleAddComment} className="flex gap-2 pt-2 border-t border-[#E5E5E5]">
+              <input
+                type="text"
+                placeholder="Add a comment..."
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                className="flex-1 bg-[#F2F2F2] border border-[#E5E5E5] rounded-full px-3 py-1.5 text-xs outline-none text-[#0F0F0F]"
+              />
+              <button type="submit" className="p-2 rounded-full bg-[#065FD4] text-white hover:bg-[#0551B5]">
+                <Send className="w-3.5 h-3.5" />
+              </button>
+            </form>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
