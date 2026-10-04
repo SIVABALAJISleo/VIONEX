@@ -495,11 +495,11 @@ export default function CreatorStudioPage() {
                   {liveScanResults.map((r, idx) => (
                     <div key={idx} className="p-4 rounded-xl border border-[#E5E5E5] bg-[#F9F9F9] flex flex-wrap items-center justify-between gap-3 text-xs">
                       <div>
-                        <p className="font-bold text-[#0F0F0F]">{r.claimant} — {r.title}</p>
-                        <p className="text-[#606060]">Match Type: {r.matchType} • Timecodes: {r.timecodes} • Audio Confidence: {(r.audioConfidence * 100).toFixed(1)}%</p>
+                        <p className="font-bold text-[#0F0F0F]">{r.owner} — {r.assetTitle}</p>
+                        <p className="text-[#606060]">Match: {r.matchedSegmentDetails} • Range: {r.matchStartSec}s - {r.matchEndSec}s • Confidence: {(r.confidenceScore * 100).toFixed(1)}%</p>
                       </div>
                       <span className="px-2.5 py-1 rounded-full font-bold text-[10px] bg-[#FEF7E0] text-[#B06000]">
-                        Action: {r.policyAction}
+                        Action: {r.policyApplied} ({r.status})
                       </span>
                     </div>
                   ))}
