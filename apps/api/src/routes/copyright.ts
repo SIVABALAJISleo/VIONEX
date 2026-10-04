@@ -5,8 +5,7 @@ import { authenticate } from '../services/auth-middleware';
 export async function copyrightRoutes(app: FastifyInstance) {
   // 1. Register a Reference Asset (Rights-holder)
   app.post('/references', { preHandler: [authenticate] }, async (request, reply) => {
-    const { title, artist, isrc, fingerprint, duration } = request.body as any;
-    const userId = (request as any).user.userId || (request as any).user.id;
+    const { title, artist, rightsOwner, fingerprint, duration } = request.body as any;
 
     if (!title || !fingerprint) {
       return reply.status(400).send({ success: false, message: 'Title and fingerprint required' });
@@ -14,12 +13,10 @@ export async function copyrightRoutes(app: FastifyInstance) {
 
     const ref = await prisma.copyrightReference.create({
       data: {
-        ownerId: userId,
+        rightsOwner: rightsOwner || artist || 'VIONEX Media Rights Inc.',
         title,
-        artist: artist || 'Unknown Artist',
-        isrc: isrc || `ISRC-${Date.now()}`,
-        fingerprint,
-        duration: duration || 180.0
+        audioFpHash: fingerprint,
+        territories: ['GLOBAL']
       }
     });
 
@@ -44,8 +41,7 @@ export async function copyrightRoutes(app: FastifyInstance) {
     let highestConfidence = 0.0;
 
     for (const ref of references) {
-      // Calculate token/hash overlap similarity
-      const refTokens = new Set(ref.fingerprint.split(/[\s,]+/));
+      const refTokens = new Set(ref.audioFpHash.split(/[\s,]+/));
       const targetTokens = audioFingerprint.split(/[\s,]+/);
       let matches = 0;
       for (const t of targetTokens) {
@@ -68,10 +64,9 @@ export async function copyrightRoutes(app: FastifyInstance) {
         videoId,
         referenceId: bestMatch.id,
         confidenceScore: highestConfidence,
-        matchStartTime: 12.0,
-        matchEndTime: 45.0,
-        status: 'CLAIMED',
-        policy: 'MONETIZE'
+        matchStartSec: 12.0,
+        matchEndSec: 45.0,
+        status: 'CLAIMED'
       },
       include: {
         reference: true
@@ -83,7 +78,7 @@ export async function copyrightRoutes(app: FastifyInstance) {
       matched: true,
       claimId: claim.id,
       confidence: highestConfidence,
-      policy: claim.policy,
+      status: claim.status,
       referenceTitle: bestMatch.title
     });
   });
@@ -115,7 +110,7 @@ export async function copyrightRoutes(app: FastifyInstance) {
   // 4. Resolve Claim (Release / Uphold)
   app.post('/claims/:claimId/resolve', { preHandler: [authenticate] }, async (request, reply) => {
     const { claimId } = request.params as { claimId: string };
-    const { resolution } = request.body as any; // 'RELEASED' or 'TAKEDOWN'
+    const { resolution } = request.body as any;
 
     const updated = await prisma.copyrightMatch.update({
       where: { id: claimId },

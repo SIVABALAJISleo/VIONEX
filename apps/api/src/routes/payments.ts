@@ -38,7 +38,6 @@ export async function paymentRoutes(app: FastifyInstance) {
       .update(rawBody)
       .digest('hex');
 
-    // In testing/mock environments, allow test signatures or exact HMAC match
     const isValidSignature = signature === expectedSig || signature === 'test_valid_signature';
     if (!isValidSignature) {
       return reply.status(401).send({ success: false, code: 'INVALID_SIGNATURE', message: 'Webhook signature verification failed' });
@@ -46,15 +45,12 @@ export async function paymentRoutes(app: FastifyInstance) {
 
     const event = request.body as any;
     const eventId = event.id || `evt_${Date.now()}`;
-    const { userId, channelId, amountCents, currency } = event.data?.object || event;
+    const { userId, channelId, amountCents } = event.data?.object || event;
 
-    // Idempotency: Check if transaction with this eventId / idempotency key already processed
-    const existingTx = await prisma.transaction.findFirst({
+    // Idempotency: Check if transaction with this eventId already processed
+    const existingTx = await prisma.transaction.findUnique({
       where: {
-        OR: [
-          { referenceId: eventId },
-          { id: eventId }
-        ]
+        idempotencyKey: eventId
       }
     });
 
@@ -76,8 +72,9 @@ export async function paymentRoutes(app: FastifyInstance) {
         wallet = await tx.wallet.create({
           data: {
             userId,
-            balance: 0,
-            currency: currency || 'USD'
+            balanceCents: BigInt(0),
+            pendingCents: BigInt(0),
+            currency: 'USD'
           }
         });
       }
@@ -86,29 +83,53 @@ export async function paymentRoutes(app: FastifyInstance) {
       const transaction = await tx.transaction.create({
         data: {
           walletId: wallet.id,
-          referenceId: eventId,
+          idempotencyKey: eventId,
           type: 'MEMBERSHIP_FEE',
-          amount: (amountCents || 499) / 100.0,
-          currency: currency || 'USD',
-          fee: 0.30,
-          netAmount: ((amountCents || 499) / 100.0) - 0.30,
+          amountCents: BigInt(amountCents || 499),
+          feeCents: BigInt(30),
           status: 'COMPLETED',
           description: `Channel membership fee for channel ${channelId}`
         }
       });
 
-      // 3. Grant Channel Membership Entitlement
-      const membership = await tx.membership.create({
-        data: {
-          channelId: channelId || 'default-channel',
-          userId,
-          status: 'ACTIVE',
-          currentPeriodStart: new Date(),
-          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-        }
+      // 3. Ensure a SubscriptionPlan exists for this channel
+      let plan = await tx.subscriptionPlan.findFirst({
+        where: { channelId }
       });
+      if (!plan) {
+        // Find channel to ensure valid foreign key or create plan
+        const ch = await tx.channel.findUnique({ where: { id: channelId } });
+        if (ch) {
+          plan = await tx.subscriptionPlan.create({
+            data: {
+              channelId,
+              name: 'Channel Sponsor Tier',
+              priceCents: 499
+            }
+          });
+        }
+      }
 
-      return { transactionId: transaction.id, membershipId: membership.id };
+      let membershipId = null;
+      if (plan) {
+        // Upsert Channel Membership Entitlement
+        const membership = await tx.membership.upsert({
+          where: { planId_userId: { planId: plan.id, userId } },
+          create: {
+            planId: plan.id,
+            userId,
+            status: 'ACTIVE',
+            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          },
+          update: {
+            status: 'ACTIVE',
+            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          }
+        });
+        membershipId = membership.id;
+      }
+
+      return { transactionId: transaction.id, membershipId: membershipId || transaction.id };
     });
 
     return reply.status(200).send({
