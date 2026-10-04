@@ -2,165 +2,120 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { History, Trash2, Search, Play, Pause, CheckCircle2 } from 'lucide-react';
-import { getHistory, VideoItem } from '@/lib/data';
+import { History, Trash2, Pause, Play, X, ExternalLink } from 'lucide-react';
+import { getStoredHistory, clearHistory, removeFromHistory, togglePauseHistory, isHistoryPaused, VideoItem } from '@/lib/data';
 
 export default function HistoryPage() {
-  const [videos, setVideos] = useState<VideoItem[]>(() => getHistory());
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isPaused, setIsPaused] = useState(false);
+  const [history, setHistory] = useState<VideoItem[]>([]);
+  const [paused, setPaused] = useState(false);
 
   useEffect(() => {
-    setVideos(getHistory());
+    setHistory(getStoredHistory());
+    setPaused(isHistoryPaused());
   }, []);
 
-  const handleClearHistory = () => {
+  const handleClear = () => {
     if (confirm('Clear all watch history?')) {
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('vionex_history');
-      }
-      setVideos([]);
+      clearHistory();
+      setHistory([]);
     }
   };
 
-  const handleRemoveItem = (id: string, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (typeof window !== 'undefined') {
-      const raw = localStorage.getItem('vionex_history');
-      if (raw) {
-        try {
-          const ids: string[] = JSON.parse(raw);
-          const next = ids.filter(x => x !== id);
-          localStorage.setItem('vionex_history', JSON.stringify(next));
-        } catch {}
-      }
-    }
-    setVideos(prev => prev.filter(v => v.id !== id));
+  const handleRemove = (id: string) => {
+    removeFromHistory(id);
+    setHistory(getStoredHistory());
   };
 
-  const filtered = videos.filter(v =>
-    v.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    v.channel.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleTogglePause = () => {
+    const next = togglePauseHistory();
+    setPaused(next);
+  };
 
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#232733]">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-            <History className="w-5 h-5" />
+    <div className="max-w-6xl mx-auto p-4 sm:p-6 bg-white text-[#0F0F0F] min-h-[80vh]">
+      <div className="flex flex-col md:flex-row gap-8 items-start">
+        {/* Left: Video List */}
+        <div className="flex-1 space-y-4 w-full">
+          <div className="pb-3 border-b border-[#E5E5E5] flex items-center justify-between">
+            <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+              <History className="w-6 h-6 text-[#0F0F0F]" />
+              Watch history
+            </h1>
+            <span className="text-xs text-[#606060]">{history.length} videos</span>
           </div>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-white">Watch History</h1>
-            <p className="text-xs text-slate-400">Manage and revisit your recently played videos</p>
-          </div>
+
+          {history.length === 0 ? (
+            <div className="text-center py-16 space-y-3">
+              <History className="w-12 h-12 text-[#909090] mx-auto" />
+              <p className="text-sm font-semibold text-[#0F0F0F]">This list has no videos.</p>
+              <p className="text-xs text-[#606060]">Videos you watch will appear here.</p>
+            </div>
+          ) : (
+            <div className="space-y-4 divide-y divide-[#E5E5E5]">
+              {history.map((video) => (
+                <div key={video.id} className="pt-4 flex gap-4 items-start group">
+                  <Link
+                    href={`/watch/${video.id}`}
+                    className="relative aspect-video w-44 sm:w-56 shrink-0 rounded-xl overflow-hidden bg-[#E5E5E5] shadow-sm"
+                  >
+                    <img src={video.thumbnailUrl} alt={video.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                    <span className="absolute bottom-1 right-1 px-1 py-0.5 rounded bg-black/85 text-[10px] font-medium text-white">
+                      {video.durationFormatted}
+                    </span>
+                  </Link>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <Link href={`/watch/${video.id}`}>
+                        <h3 className="font-semibold text-sm text-[#0F0F0F] line-clamp-2 leading-snug hover:text-[#065FD4]">
+                          {video.title}
+                        </h3>
+                      </Link>
+                      <button
+                        onClick={() => handleRemove(video.id)}
+                        className="p-1 rounded-full hover:bg-[#F2F2F2] text-[#606060] hover:text-[#0F0F0F]"
+                        title="Remove from watch history"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <Link
+                      href={`/channel/${video.channel.handle}`}
+                      className="text-xs text-[#606060] hover:text-[#0F0F0F] mt-1 block"
+                    >
+                      {video.channel.name} • {video.viewsCount} views
+                    </Link>
+
+                    <p className="text-xs text-[#606060] line-clamp-2 mt-2 hidden sm:block">
+                      {video.description}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Action Controls */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Search history..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-[#14161d] border border-[#232733] rounded-full pl-9 pr-4 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors w-48 sm:w-60"
-            />
-          </div>
-
+        {/* Right: Actions Sidebar */}
+        <div className="w-full md:w-64 bg-[#F9F9F9] border border-[#E5E5E5] rounded-2xl p-4 space-y-3 shrink-0">
+          <h2 className="text-xs font-bold text-[#606060] uppercase tracking-wider">History Controls</h2>
           <button
-            onClick={() => setIsPaused(!isPaused)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-              isPaused
-                ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
-                : 'bg-[#14161d] border-[#232733] text-slate-300 hover:text-white'
-            }`}
+            onClick={handleClear}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-[#0F0F0F] hover:bg-[#E5E5E5] transition-colors"
           >
-            {isPaused ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-            <span>{isPaused ? 'History Paused' : 'Pause'}</span>
+            <Trash2 className="w-4 h-4 text-[#606060]" />
+            <span>Clear all watch history</span>
           </button>
-
           <button
-            onClick={handleClearHistory}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#14161d] border border-[#232733] text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/30 transition-colors"
+            onClick={handleTogglePause}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-[#0F0F0F] hover:bg-[#E5E5E5] transition-colors"
           >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>Clear History</span>
+            {paused ? <Play className="w-4 h-4 text-[#137333]" /> : <Pause className="w-4 h-4 text-[#606060]" />}
+            <span>{paused ? 'Resume watch history' : 'Pause watch history'}</span>
           </button>
         </div>
       </div>
-
-      {/* Video List */}
-      {filtered.length > 0 ? (
-        <div className="space-y-3">
-          {filtered.map((video) => (
-            <div
-              key={video.id}
-              className="group flex flex-col sm:flex-row items-start sm:items-center gap-4 p-3 rounded-2xl hover:bg-[#14161d] border border-transparent hover:border-[#232733] transition-all relative"
-            >
-              <Link
-                href={`/watch/${video.id}`}
-                className="relative w-full sm:w-56 aspect-video rounded-xl bg-black overflow-hidden shrink-0"
-              >
-                <img
-                  src={video.thumbnailUrl}
-                  alt={video.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                />
-                <span className="absolute bottom-1 right-1 bg-black/80 px-1.5 py-0.5 rounded text-[10px] font-mono text-white">
-                  {video.durationFormatted || `${video.duration}s`}
-                </span>
-              </Link>
-
-              <div className="flex-1 min-w-0 pr-8">
-                <Link href={`/watch/${video.id}`}>
-                  <h3 className="font-semibold text-sm sm:text-base text-white group-hover:text-indigo-400 transition-colors line-clamp-2">
-                    {video.title}
-                  </h3>
-                </Link>
-                <div className="flex items-center gap-1.5 mt-1 text-slate-400 text-xs">
-                  <span>{video.channel.name}</span>
-                  <CheckCircle2 className="w-3 h-3 text-slate-400" />
-                </div>
-                <p className="text-xs text-slate-500 mt-1 line-clamp-1">
-                  {video.description}
-                </p>
-                <div className="text-[11px] text-slate-500 mt-1">
-                  {video.viewsCount} • Watched recently
-                </div>
-              </div>
-
-              <button
-                onClick={(e) => handleRemoveItem(video.id, e)}
-                title="Remove from history"
-                className="absolute top-3 right-3 sm:relative sm:top-auto sm:right-auto opacity-0 group-hover:opacity-100 p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-full transition-all shrink-0"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-8">
-          <History className="w-16 h-16 text-slate-600 mb-4" />
-          <h2 className="text-xl font-bold text-white mb-2">
-            {searchQuery ? 'No matching videos in history' : 'No watch history yet'}
-          </h2>
-          <p className="text-slate-400 text-sm max-w-md mb-6">
-            {searchQuery
-              ? 'Try searching with different keywords or clear your search filter.'
-              : 'Videos you watch will appear here so you can easily find them again.'}
-          </p>
-          <Link
-            href="/"
-            className="px-6 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white transition-colors inline-block"
-          >
-            Start Watching
-          </Link>
-        </div>
-      )}
     </div>
   );
 }
