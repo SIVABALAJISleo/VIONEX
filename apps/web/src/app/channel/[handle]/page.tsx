@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2, Bell, Share2, Play, ThumbsUp, MessageSquare, BarChart2 } from 'lucide-react';
-import { INITIAL_VIDEOS, INITIAL_SHORTS, getSubscriptions, toggleSubscription } from '@/lib/data';
+import { INITIAL_VIDEOS, INITIAL_SHORTS, getSubscriptions, toggleSubscription, formatNumber } from '@/lib/data';
 import { INITIAL_COMMUNITY_POSTS, voteOnCommunityPoll, CommunityPost } from '@/lib/community';
 
 export default function ChannelPage() {
@@ -64,8 +64,8 @@ export default function ChannelPage() {
                 <h1 className="text-2xl sm:text-3xl font-bold text-[#0F0F0F]">{channel.name}</h1>
                 {channel.isVerified && <CheckCircle2 className="w-5 h-5 text-[#606060]" />}
               </div>
-              <p className="text-xs text-[#606060]">
-                @{channel.handle} • {subCount.toLocaleString()} subscribers • {videosToDisplay.length} videos
+              <p className="text-xs text-[#606060]" suppressHydrationWarning>
+                @{channel.handle} • {formatNumber(subCount)} subscribers • {videosToDisplay.length} videos
               </p>
               <p className="text-xs text-[#606060] max-w-xl line-clamp-2 pt-1">
                 {channel.bio || 'Original high-performance video streaming engineering and decentralized media architecture.'}
@@ -235,7 +235,7 @@ export default function ChannelPage() {
                         <BarChart2 className="w-4 h-4 text-[#FF0000]" />
                         Community Poll
                       </span>
-                      <span>{post.poll.totalVotes.toLocaleString()} votes</span>
+                      <span suppressHydrationWarning>{formatNumber(post.poll.totalVotes)} votes</span>
                     </div>
 
                     <div className="space-y-2">
@@ -282,7 +282,7 @@ export default function ChannelPage() {
                 <div className="flex items-center gap-6 pt-2 border-t border-[#F2F2F2] text-xs text-[#606060]">
                   <button className="flex items-center gap-1.5 hover:text-[#0F0F0F] transition-colors">
                     <ThumbsUp className="w-4 h-4" />
-                    <span>{post.likes.toLocaleString()}</span>
+                    <span suppressHydrationWarning>{formatNumber(post.likes)}</span>
                   </button>
                   <button className="flex items-center gap-1.5 hover:text-[#0F0F0F] transition-colors">
                     <MessageSquare className="w-4 h-4" />

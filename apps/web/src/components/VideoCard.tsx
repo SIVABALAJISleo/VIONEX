@@ -11,7 +11,7 @@ import {
   Check,
   EyeOff
 } from 'lucide-react';
-import { toggleWatchLater, isWatchLater } from '@/lib/data';
+import { toggleWatchLater, isWatchLater, formatNumber } from '@/lib/data';
 
 export interface VideoCardProps {
   id: string;
@@ -128,8 +128,8 @@ export default function VideoCard({
             <span className="truncate">{channel.name}</span>
             {channel.isVerified && <CheckCircle2 className="w-3.5 h-3.5 text-[#606060] shrink-0" />}
           </Link>
-          <p className="text-xs text-[#606060] mt-0.5">
-            {typeof viewsCount === 'number' ? `${viewsCount.toLocaleString()} views` : viewsCount} • {publishedAt || 'Recently'}
+          <p className="text-xs text-[#606060] mt-0.5" suppressHydrationWarning>
+            {typeof viewsCount === 'number' ? `${formatNumber(viewsCount)} views` : viewsCount} • {publishedAt || 'Recently'}
           </p>
         </div>
 

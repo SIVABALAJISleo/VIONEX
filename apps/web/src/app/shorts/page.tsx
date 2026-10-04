@@ -17,7 +17,7 @@ import {
   X,
   MoreVertical
 } from 'lucide-react';
-import { INITIAL_SHORTS, ShortItem } from '@/lib/data';
+import { INITIAL_SHORTS, ShortItem, formatNumber } from '@/lib/data';
 
 export default function ShortsPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -193,8 +193,8 @@ export default function ShortsPage() {
             >
               <ThumbsUp className={`w-5 h-5 ${currentLikes.isLiked ? 'fill-white' : ''}`} />
             </button>
-            <span className="text-[11px] font-semibold text-[#0F0F0F]">
-              {currentLikes.count.toLocaleString()}
+            <span className="text-[11px] font-semibold text-[#0F0F0F]" suppressHydrationWarning>
+              {formatNumber(currentLikes.count)}
             </span>
           </div>
 
@@ -214,7 +214,7 @@ export default function ShortsPage() {
             >
               <MessageSquare className="w-5 h-5" />
             </button>
-            <span className="text-[11px] font-semibold text-[#0F0F0F]">
+            <span className="text-[11px] font-semibold text-[#0F0F0F]" suppressHydrationWarning>
               {currentComments.length}
             </span>
           </div>
