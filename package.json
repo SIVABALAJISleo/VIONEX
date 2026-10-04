@@ -10,18 +10,17 @@
   "scripts": {
     "dev": "concurrently \"npm run dev -w @vionex/api\" \"npm run dev -w @vionex/web\" \"npm run start -w @vionex/media-worker\"",
     "build": "npm run build --workspaces",
-    "test": "ts-node -T tests/run-all-e2e.ts",
-    "test:e2e": "ts-node -T tests/run-all-e2e.ts",
+    "test": "npx ts-node -T tests/run-all-e2e.ts",
+    "test:e2e": "npx ts-node -T tests/run-all-e2e.ts",
     "sync": "node scripts/auto-sync.js",
     "sync:ps": "powershell -ExecutionPolicy Bypass -File scripts/auto-sync.ps1",
-    "parity:report": "ts-node scripts/parity-report.ts",
+    "parity:report": "npx ts-node -T scripts/parity-report.ts",
     "db:generate": "npm run prisma:generate -w @vionex/database",
     "db:migrate": "npm run prisma:migrate -w @vionex/database"
   },
   "devDependencies": {
     "concurrently": "^9.1.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.7.0",
-    "vitest": "^2.1.8"
+    "typescript": "^5.7.0"
   }
 }
