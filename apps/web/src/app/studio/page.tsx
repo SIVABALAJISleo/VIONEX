@@ -471,8 +471,8 @@ export default function CreatorStudioPage() {
             {liveScanResults && (
               <div className="space-y-3 pt-2">
                 <h4 className="font-semibold text-xs text-[#0F0F0F]">Fingerprint Matching Results</h4>
-                {liveScanResults.map((r) => (
-                  <div key={r.matchId} className="p-4 rounded-xl border border-[#E5E5E5] bg-[#F9F9F9] flex items-center justify-between text-xs">
+                {liveScanResults.map((r, idx) => (
+                  <div key={r.assetId || idx} className="p-4 rounded-xl border border-[#E5E5E5] bg-[#F9F9F9] flex items-center justify-between text-xs">
                     <div>
                       <span className="font-bold text-[#0F0F0F]">{r.assetTitle}</span>
                       <span className="text-[#606060] block">Owner: {r.owner} • Match Confidence: {(r.confidenceScore * 100).toFixed(1)}%</span>
