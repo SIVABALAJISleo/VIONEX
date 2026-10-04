@@ -35,15 +35,23 @@ import {
   X,
   Sliders,
   Settings as SettingsIcon,
-  HelpCircle
+  HelpCircle,
+  Download,
+  FileText,
+  ShieldCheck,
+  Archive,
+  RefreshCw
 } from 'lucide-react';
 import { getStoredVideos, saveCustomVideo, deleteVideo, VideoItem } from '@/lib/data';
 import { ContentIDEngine, ContentIDMatchResult } from '@/lib/content-id';
 import { GLOBAL_EDGE_POPS, GlobalEdgeDirector } from '@/lib/edge-cdn';
 import { TwoTowerEngine, UserContext } from '@/lib/two-tower';
+import { generateChannelExportArchive, downloadChannelExport } from '@/lib/creator-export';
+import { configureLiveChatReplayArchive, LiveChatReplayArchiveConfig } from '@/lib/live';
+import { generateTaxComplianceReport, processMockBillingTransaction, TaxComplianceReport } from '@/lib/monetization-compliance';
 
 export default function CreatorStudioPage() {
-  const [activeTab, setActiveTab] = useState<'content' | 'upload' | 'analytics' | 'two-tower' | 'comments' | 'copyright' | 'customization'>('content');
+  const [activeTab, setActiveTab] = useState<'content' | 'upload' | 'analytics' | 'two-tower' | 'comments' | 'copyright' | 'monetization' | 'customization'>('content');
   const [uploadStep, setUploadStep] = useState(1);
   const [videoTitle, setVideoTitle] = useState('');
   const [videoDesc, setVideoDesc] = useState('');
@@ -60,6 +68,17 @@ export default function CreatorStudioPage() {
   const [isScanningContentID, setIsScanningContentID] = useState(false);
   const [scanTargetVideo, setScanTargetVideo] = useState<string>('');
   const [liveScanResults, setLiveScanResults] = useState<ContentIDMatchResult[] | null>(null);
+
+  // Chat Replay Config State (CREAT-059)
+  const [chatReplayConfig, setChatReplayConfig] = useState<LiveChatReplayArchiveConfig>(
+    configureLiveChatReplayArchive({ channelId: 'vionex-labs' })
+  );
+
+  // Monetization Tax Report State (MONET-029)
+  const [taxReport, setTaxReport] = useState<TaxComplianceReport>(
+    generateTaxComplianceReport('vionex-labs', 2025)
+  );
+  const [testBillingStatus, setTestBillingStatus] = useState<string | null>(null);
 
   // Studio Comments State
   const [studioComments, setStudioComments] = useState([
@@ -159,6 +178,17 @@ export default function CreatorStudioPage() {
     }, 1500);
   };
 
+  const handleTakeoutExport = () => {
+    const bundle = generateChannelExportArchive('vionex-labs', 'VIONEX Engineering');
+    downloadChannelExport(bundle);
+  };
+
+  const handleRunZeroFeeBillingTest = () => {
+    const testResult = processMockBillingTransaction(49.99, 'Channel Membership Sandbox Renewal');
+    setTestBillingStatus(`Success: Processed ${testResult.receiptNumber} with $0.00 fee (Test Mode Active).`);
+    setTimeout(() => setTestBillingStatus(null), 5000);
+  };
+
   return (
     <div className="flex min-h-[calc(100vh-56px)] bg-[#F9F9F9] text-[#0F0F0F] select-none">
       {/* Studio Sidebar */}
@@ -182,8 +212,9 @@ export default function CreatorStudioPage() {
             { id: 'analytics', label: 'Analytics', icon: BarChart3 },
             { id: 'copyright', label: 'Live Content ID Scanner', icon: ScanLine },
             { id: 'two-tower', label: 'Two-Tower AI & Global CDN', icon: Cpu },
+            { id: 'monetization', label: 'Monetization & Taxes', icon: DollarSign },
             { id: 'comments', label: 'Comments & Community', icon: MessageSquare },
-            { id: 'customization', label: 'Customization', icon: Sliders }
+            { id: 'customization', label: 'Customization & Takeout', icon: Sliders }
           ].map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -216,8 +247,9 @@ export default function CreatorStudioPage() {
               {activeTab === 'analytics' && 'Channel Analytics'}
               {activeTab === 'copyright' && 'Copyright & Live Content ID'}
               {activeTab === 'two-tower' && 'Two-Tower DNN Model & Global Edge CDN Director'}
+              {activeTab === 'monetization' && 'Monetization & Financial Tax Compliance'}
               {activeTab === 'comments' && 'Channel Comments'}
-              {activeTab === 'customization' && 'Channel Customization'}
+              {activeTab === 'customization' && 'Channel Customization & Takeout Backup'}
             </h1>
             <p className="text-xs text-[#606060] mt-0.5">
               Manage your videos, analyze real-time performance, and audit algorithmic features.
@@ -259,38 +291,29 @@ export default function CreatorStudioPage() {
                           <img
                             src={v.thumbnailUrl}
                             alt={v.title}
-                            className="w-20 h-12 rounded-lg object-cover border border-[#E5E5E5] shrink-0"
+                            className="w-20 aspect-video rounded-lg object-cover border border-[#E5E5E5]"
                           />
-                          <div className="min-w-0">
-                            <p className="font-semibold text-xs text-[#0F0F0F] line-clamp-1">{v.title}</p>
-                            <p className="text-[11px] text-[#606060] line-clamp-1 mt-0.5">{v.description}</p>
+                          <div>
+                            <span className="font-semibold block truncate max-w-xs">{v.title}</span>
+                            <span className="text-[11px] text-[#606060]">{v.category}</span>
                           </div>
                         </td>
-                        <td className="p-3.5 whitespace-nowrap">
-                          <span className="px-2 py-0.5 rounded-full bg-[#E6F4EA] text-[#137333] font-semibold text-[10px]">
+                        <td className="p-3.5">
+                          <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#E8F5E9] text-[#137333]">
                             Public
                           </span>
                         </td>
-                        <td className="p-3.5 whitespace-nowrap text-[#606060]">{v.publishedAt}</td>
-                        <td className="p-3.5 whitespace-nowrap font-medium">{v.viewsCount}</td>
-                        <td className="p-3.5 whitespace-nowrap font-medium">{v.likesCount.toLocaleString()}</td>
-                        <td className="p-3.5 text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-2">
-                            <Link
-                              href={`/watch/${v.id}`}
-                              className="p-1.5 rounded-lg hover:bg-[#F2F2F2] text-[#606060] hover:text-[#0F0F0F]"
-                              title="Watch on VIONEX"
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                            </Link>
-                            <button
-                              onClick={() => handleDeleteVideo(v.id)}
-                              className="p-1.5 rounded-lg hover:bg-[#FCE8E6] text-[#606060] hover:text-[#C5221F]"
-                              title="Delete Video"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
+                        <td className="p-3.5 text-[#606060]">{v.publishedAt}</td>
+                        <td className="p-3.5 font-medium">{v.viewsCount}</td>
+                        <td className="p-3.5 font-medium">{v.likesCount}</td>
+                        <td className="p-3.5 text-right">
+                          <button
+                            onClick={() => handleDeleteVideo(v.id)}
+                            className="p-1.5 rounded-lg hover:bg-red-50 text-[#606060] hover:text-[#FF0000] transition-colors"
+                            title="Delete Video"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -303,67 +326,51 @@ export default function CreatorStudioPage() {
 
         {/* 2. UPLOAD TAB */}
         {activeTab === 'upload' && (
-          <div className="max-w-2xl mx-auto bg-white border border-[#E5E5E5] rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
+          <div className="bg-white border border-[#E5E5E5] rounded-2xl p-6 shadow-sm max-w-2xl mx-auto space-y-4">
+            <h2 className="text-base font-bold text-[#0F0F0F]">Upload New Video</h2>
             {uploadStep === 1 && (
               <form onSubmit={handleUploadSubmit} className="space-y-4">
-                <div className="border-2 border-dashed border-[#CCCCCC] rounded-2xl p-8 text-center space-y-3 hover:border-[#065FD4] transition-colors cursor-pointer bg-[#F9F9F9]">
-                  <UploadCloud className="w-12 h-12 text-[#065FD4] mx-auto" />
-                  <p className="font-bold text-sm text-[#0F0F0F]">Drag and drop video files to upload</p>
-                  <p className="text-xs text-[#606060]">Your videos will be private until you publish them.</p>
-                  <input type="file" accept="video/*" className="hidden" id="video-file-picker" />
-                  <label
-                    htmlFor="video-file-picker"
-                    className="inline-block px-4 py-2 rounded-full bg-[#065FD4] text-white text-xs font-semibold cursor-pointer hover:bg-[#0551B5]"
-                  >
-                    Select File
-                  </label>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-[#0F0F0F]">Title (required)</label>
+                <div>
+                  <label className="block text-xs font-semibold text-[#0F0F0F] mb-1">Title</label>
                   <input
                     type="text"
                     required
-                    placeholder="Add a title that describes your video"
                     value={videoTitle}
                     onChange={(e) => setVideoTitle(e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-[#CCCCCC] focus:border-[#065FD4] outline-none text-xs text-[#0F0F0F]"
+                    placeholder="Enter video title"
+                    className="w-full p-2.5 rounded-xl border border-[#CCCCCC] focus:border-[#0F0F0F] text-xs outline-none"
                   />
                 </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-[#0F0F0F]">Description</label>
+                <div>
+                  <label className="block text-xs font-semibold text-[#0F0F0F] mb-1">Description</label>
                   <textarea
                     rows={4}
-                    placeholder="Tell viewers about your video"
                     value={videoDesc}
                     onChange={(e) => setVideoDesc(e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-[#CCCCCC] focus:border-[#065FD4] outline-none text-xs text-[#0F0F0F]"
+                    placeholder="Tell viewers about your video"
+                    className="w-full p-2.5 rounded-xl border border-[#CCCCCC] focus:border-[#0F0F0F] text-xs outline-none"
                   />
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-[#0F0F0F]">Category</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-[#0F0F0F] mb-1">Category</label>
                     <select
                       value={videoCategory}
                       onChange={(e) => setVideoCategory(e.target.value)}
-                      className="w-full p-2.5 rounded-xl border border-[#CCCCCC] focus:border-[#065FD4] outline-none text-xs text-[#0F0F0F]"
+                      className="w-full p-2.5 rounded-xl border border-[#CCCCCC] text-xs outline-none bg-white"
                     >
-                      <option value="Technology">Technology</option>
-                      <option value="Coding">Coding</option>
-                      <option value="Gaming">Gaming</option>
-                      <option value="Science">Science</option>
-                      <option value="Music">Music</option>
+                      <option>Technology</option>
+                      <option>Engineering</option>
+                      <option>Gaming</option>
+                      <option>Education</option>
                     </select>
                   </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-[#0F0F0F]">Visibility</label>
+                  <div>
+                    <label className="block text-xs font-semibold text-[#0F0F0F] mb-1">Visibility</label>
                     <select
                       value={videoVisibility}
                       onChange={(e) => setVideoVisibility(e.target.value)}
-                      className="w-full p-2.5 rounded-xl border border-[#CCCCCC] focus:border-[#065FD4] outline-none text-xs text-[#0F0F0F]"
+                      className="w-full p-2.5 rounded-xl border border-[#CCCCCC] text-xs outline-none bg-white"
                     >
                       <option value="PUBLIC">Public</option>
                       <option value="UNLISTED">Unlisted</option>
@@ -371,52 +378,50 @@ export default function CreatorStudioPage() {
                     </select>
                   </div>
                 </div>
-
                 <button
                   type="submit"
-                  className="w-full py-2.5 rounded-full bg-[#065FD4] hover:bg-[#0551B5] text-white text-xs font-bold shadow-md transition-all mt-4"
+                  className="w-full py-2.5 bg-[#065FD4] hover:bg-[#0551B5] text-white text-xs font-semibold rounded-full transition-colors"
                 >
-                  Upload & Process Video
+                  Upload & Transcode
                 </button>
               </form>
             )}
 
             {uploadStep === 2 && (
-              <div className="text-center py-8 space-y-4">
-                <div className="w-16 h-16 rounded-full border-4 border-[#065FD4] border-t-transparent animate-spin mx-auto" />
-                <h3 className="font-bold text-base text-[#0F0F0F]">{uploadProgress}% Uploaded</h3>
-                <p className="text-xs text-[#606060] font-mono">{encodingStatus}</p>
-                <div className="w-full bg-[#E5E5E5] h-2 rounded-full overflow-hidden max-w-md mx-auto">
-                  <div
-                    className="bg-[#065FD4] h-full transition-all duration-300"
-                    style={{ width: `${uploadProgress}%` }}
-                  />
+              <div className="p-6 text-center space-y-4">
+                <div className="w-12 h-12 rounded-full bg-blue-50 text-[#065FD4] flex items-center justify-center mx-auto animate-spin">
+                  <RefreshCw className="w-6 h-6" />
                 </div>
+                <h3 className="font-bold text-sm text-[#0F0F0F]">{encodingStatus}</h3>
+                <div className="w-full bg-[#E5E5E5] rounded-full h-2 overflow-hidden max-w-sm mx-auto">
+                  <div className="bg-[#065FD4] h-2 transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                </div>
+                <span className="text-xs text-[#606060] font-mono">{uploadProgress}% Complete</span>
               </div>
             )}
 
             {uploadStep === 3 && (
-              <div className="text-center py-8 space-y-4">
-                <CheckCircle className="w-16 h-16 text-[#137333] mx-auto" />
-                <h3 className="font-bold text-lg text-[#0F0F0F]">Video Published Successfully!</h3>
-                <p className="text-xs text-[#606060]">
-                  Your video is now live on VIONEX and being distributed across global edge cache nodes.
-                </p>
-                <div className="flex justify-center gap-3 pt-2">
+              <div className="p-6 text-center space-y-4">
+                <div className="w-12 h-12 rounded-full bg-[#E8F5E9] text-[#137333] flex items-center justify-center mx-auto">
+                  <CheckCircle className="w-6 h-6" />
+                </div>
+                <h3 className="font-bold text-sm text-[#0F0F0F]">Your video is now published!</h3>
+                <div className="flex justify-center gap-3">
                   <Link
                     href={`/watch/${publishedVideoId}`}
-                    className="px-5 py-2 rounded-full bg-[#065FD4] text-white text-xs font-semibold hover:bg-[#0551B5]"
+                    className="px-4 py-2 bg-[#0F0F0F] text-white text-xs font-semibold rounded-full hover:bg-[#272727]"
                   >
-                    Watch Video
+                    View Video
                   </Link>
                   <button
                     onClick={() => {
-                      setActiveTab('content');
                       setUploadStep(1);
+                      setVideoTitle('');
+                      setVideoDesc('');
                     }}
-                    className="px-5 py-2 rounded-full bg-[#F2F2F2] text-[#0F0F0F] text-xs font-semibold hover:bg-[#E5E5E5]"
+                    className="px-4 py-2 border border-[#CCCCCC] text-xs font-semibold rounded-full hover:bg-[#F2F2F2]"
                   >
-                    Go to Content
+                    Upload Another
                   </button>
                 </div>
               </div>
@@ -429,90 +434,71 @@ export default function CreatorStudioPage() {
           <div className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {[
-                { title: 'Views', value: '425.8K', change: '+14.2% vs last 28 days', isUp: true },
-                { title: 'Watch time (hours)', value: '18.4K', change: '+9.8% vs last 28 days', isUp: true },
-                { title: 'Subscribers', value: '+3.4K', change: '+22.5% vs last 28 days', isUp: true },
-                { title: 'Estimated Revenue', value: '$2,840.00', change: '+18.1% vs last 28 days', isUp: true }
-              ].map((card, idx) => (
-                <div key={idx} className="bg-white border border-[#E5E5E5] rounded-2xl p-4 space-y-2 shadow-sm">
-                  <p className="text-xs font-medium text-[#606060]">{card.title}</p>
-                  <p className="text-2xl font-bold text-[#0F0F0F]">{card.value}</p>
-                  <p className="text-[11px] text-[#137333] font-medium flex items-center gap-1">
-                    <TrendingUp className="w-3.5 h-3.5" />
-                    <span>{card.change}</span>
-                  </p>
+                { title: 'Views', value: '425.8K', change: '+18.4% vs last 28 days' },
+                { title: 'Watch time (hours)', value: '38.4K', change: '+22.1% vs last 28 days' },
+                { title: 'Subscribers', value: '+3.2K', change: '+12.0% vs last 28 days' },
+                { title: 'Estimated Revenue', value: '$4,820.50', change: '+15.8% vs last 28 days' }
+              ].map((card, i) => (
+                <div key={i} className="bg-white border border-[#E5E5E5] rounded-2xl p-5 shadow-sm space-y-1">
+                  <div className="text-xs text-[#606060]">{card.title}</div>
+                  <div className="text-2xl font-bold text-[#0F0F0F]">{card.value}</div>
+                  <div className="text-[11px] text-[#137333] font-semibold">{card.change}</div>
                 </div>
               ))}
-            </div>
-
-            <div className="bg-white border border-[#E5E5E5] rounded-2xl p-6 shadow-sm space-y-4">
-              <h3 className="font-bold text-sm text-[#0F0F0F]">Real-time Performance</h3>
-              <div className="h-44 w-full bg-[#F9F9F9] rounded-xl flex items-end justify-between p-4 gap-2 border border-[#E5E5E5]">
-                {[45, 60, 55, 75, 90, 85, 110, 130, 120, 140, 165, 180, 150, 195, 210].map((val, idx) => (
-                  <div key={idx} className="flex-1 flex flex-col items-center gap-1">
-                    <div
-                      className="w-full bg-[#065FD4] rounded-t-sm hover:bg-[#0551B5] transition-all"
-                      style={{ height: `${(val / 220) * 120}px` }}
-                    />
-                    <span className="text-[9px] text-[#909090]">{idx * 2}h</span>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         )}
 
         {/* 4. COPYRIGHT & CONTENT ID TAB */}
         {activeTab === 'copyright' && (
-          <div className="space-y-6">
-            <div className="bg-white border border-[#E5E5E5] rounded-2xl p-6 shadow-sm space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#E5E5E5]">
-                <div>
-                  <h3 className="font-bold text-base text-[#0F0F0F]">Live Content ID Scanner</h3>
-                  <p className="text-xs text-[#606060]">
-                    Automated Audio Sub-Band FFT & Perceptual dHash candidate verification against protected reference assets.
-                  </p>
-                </div>
-                <button
-                  onClick={handleRunContentIDScan}
-                  disabled={isScanningContentID}
-                  className="px-4 py-2 rounded-full bg-[#065FD4] hover:bg-[#0551B5] text-white text-xs font-semibold transition-all disabled:opacity-50"
-                >
-                  {isScanningContentID ? 'Running Spectral Difference...' : 'Scan Video for Copyright Matches'}
-                </button>
+          <div className="bg-white border border-[#E5E5E5] rounded-2xl p-6 shadow-sm space-y-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-base text-[#0F0F0F]">Live Content ID Automated Fingerprinting Scanner</h3>
+                <p className="text-xs text-[#606060] mt-0.5">
+                  Sliding-window acoustic sub-band fingerprint matching and visual perceptual dHash correlation.
+                </p>
               </div>
-
-              {isScanningContentID && (
-                <div className="p-6 bg-[#F9F9F9] rounded-xl border border-[#E5E5E5] text-center space-y-3">
-                  <div className="w-8 h-8 rounded-full border-2 border-[#065FD4] border-t-transparent animate-spin mx-auto" />
-                  <p className="text-xs font-semibold text-[#0F0F0F]">Extracting Chromaprint 32-bit acoustic fingerprints and perceptual 64-bit frame dHashes...</p>
-                </div>
-              )}
-
-              {liveScanResults && (
-                <div className="space-y-3">
-                  <h4 className="font-bold text-xs text-[#0F0F0F] uppercase tracking-wider">Scan Results</h4>
-                  {liveScanResults.map((r, idx) => (
-                    <div key={idx} className="p-4 rounded-xl border border-[#E5E5E5] bg-[#F9F9F9] flex flex-wrap items-center justify-between gap-3 text-xs">
-                      <div>
-                        <p className="font-bold text-[#0F0F0F]">{r.owner} — {r.assetTitle}</p>
-                        <p className="text-[#606060]">Match: {r.matchedSegmentDetails} • Range: {r.matchStartSec}s - {r.matchEndSec}s • Confidence: {(r.confidenceScore * 100).toFixed(1)}%</p>
-                      </div>
-                      <span className="px-2.5 py-1 rounded-full font-bold text-[10px] bg-[#FEF7E0] text-[#B06000]">
-                        Action: {r.policyApplied} ({r.status})
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <button
+                onClick={handleRunContentIDScan}
+                disabled={isScanningContentID}
+                className="px-4 py-2 rounded-full bg-[#0F0F0F] hover:bg-[#272727] text-white text-xs font-semibold transition-all disabled:opacity-50"
+              >
+                {isScanningContentID ? 'Scanning Waveforms...' : 'Run Content ID Scan'}
+              </button>
             </div>
+
+            {liveScanResults && (
+              <div className="space-y-3 pt-2">
+                <h4 className="font-semibold text-xs text-[#0F0F0F]">Fingerprint Matching Results</h4>
+                {liveScanResults.map((r) => (
+                  <div key={r.matchId} className="p-4 rounded-xl border border-[#E5E5E5] bg-[#F9F9F9] flex items-center justify-between text-xs">
+                    <div>
+                      <span className="font-bold text-[#0F0F0F]">{r.assetTitle}</span>
+                      <span className="text-[#606060] block">Owner: {r.owner} • Match Confidence: {(r.confidenceScore * 100).toFixed(1)}%</span>
+                      <span className="text-[#606060] block text-[11px]">Segment: {r.matchedSegmentDetails}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-1 rounded-full font-bold text-[10px] bg-[#FEF7E0] text-[#B06000]">
+                        Policy: {r.policyApplied}
+                      </span>
+                      <button
+                        onClick={() => alert(`Copyright Dispute filed for ${r.assetTitle}. Status escalated to manual review.`)}
+                        className="px-3 py-1 rounded-full border border-[#CCCCCC] hover:bg-white text-xs font-semibold text-[#0F0F0F]"
+                      >
+                        File Copyright Dispute
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
         {/* 5. TWO-TOWER AI & GLOBAL EDGE CDN TAB */}
         {activeTab === 'two-tower' && (
           <div className="space-y-6">
-            {/* Edge CDN PoPs */}
             <div className="bg-white border border-[#E5E5E5] rounded-2xl p-6 shadow-sm space-y-4">
               <h3 className="font-bold text-base text-[#0F0F0F]">Global High-Scale Edge CDN Director</h3>
               <p className="text-xs text-[#606060]">
@@ -535,7 +521,6 @@ export default function CreatorStudioPage() {
               </div>
             </div>
 
-            {/* Two-Tower Deep Learning Diagram */}
             <div className="bg-white border border-[#E5E5E5] rounded-2xl p-6 shadow-sm space-y-4">
               <h3 className="font-bold text-base text-[#0F0F0F]">Two-Tower Deep Learning Candidate Generation</h3>
               <p className="text-xs text-[#606060]">
@@ -550,7 +535,102 @@ export default function CreatorStudioPage() {
           </div>
         )}
 
-        {/* 6. COMMENTS TAB */}
+        {/* 6. MONETIZATION & TAX COMPLIANCE TAB (MONET-029, MONET-030) */}
+        {activeTab === 'monetization' && (
+          <div className="space-y-6">
+            <div className="bg-white border border-[#E5E5E5] rounded-2xl p-6 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-base text-[#0F0F0F] flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-[#107C41]" />
+                    Financial & Tax Compliance Reports (IRS Form 1099 / EU VAT)
+                  </h3>
+                  <p className="text-xs text-[#606060] mt-0.5">
+                    Official tax year {taxReport.taxYear} revenue ledger reconciliation and withholding statement.
+                  </p>
+                </div>
+                <button
+                  onClick={() => alert(`Tax Statement ${taxReport.reportId} exported as CSV/PDF.`)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full border border-[#CCCCCC] hover:bg-[#F2F2F2] text-xs font-semibold text-[#0F0F0F]"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Export Tax Audit Statement</span>
+                </button>
+              </div>
+
+              {/* Summary Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                <div className="p-4 rounded-xl bg-[#F9F9F9] border border-[#E5E5E5] text-xs">
+                  <div className="text-[#606060]">Total Gross Platform Earnings</div>
+                  <div className="text-xl font-bold text-[#0F0F0F] mt-1">${taxReport.totalGrossEarningsUSD.toLocaleString()} USD</div>
+                </div>
+                <div className="p-4 rounded-xl bg-[#F9F9F9] border border-[#E5E5E5] text-xs">
+                  <div className="text-[#606060]">Net Creator Payout</div>
+                  <div className="text-xl font-bold text-[#107C41] mt-1">${taxReport.totalCreatorNetUSD.toLocaleString()} USD</div>
+                </div>
+                <div className="p-4 rounded-xl bg-[#F9F9F9] border border-[#E5E5E5] text-xs">
+                  <div className="text-[#606060]">IRS 1099-NEC Eligibility</div>
+                  <div className="text-xl font-bold text-[#065FD4] mt-1">Eligible (Over $600)</div>
+                </div>
+              </div>
+
+              {/* Revenue Ledger Table */}
+              <div className="overflow-x-auto border border-[#E5E5E5] rounded-xl mt-4">
+                <table className="w-full text-left text-xs text-[#0F0F0F]">
+                  <thead className="bg-[#F9F9F9] text-[#606060] font-semibold border-b border-[#E5E5E5]">
+                    <tr>
+                      <th className="p-3">Revenue Stream</th>
+                      <th className="p-3">Gross Amount</th>
+                      <th className="p-3">Creator Share</th>
+                      <th className="p-3">Split Ratio</th>
+                      <th className="p-3">Accounting Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#E5E5E5]">
+                    {taxReport.ledger.map((item) => (
+                      <tr key={item.id} className="hover:bg-[#F9F9F9]">
+                        <td className="p-3 font-semibold">{item.source}</td>
+                        <td className="p-3">${item.grossAmountUSD.toFixed(2)}</td>
+                        <td className="p-3 text-[#107C41] font-bold">${item.creatorShareUSD.toFixed(2)}</td>
+                        <td className="p-3 font-mono">{item.splitRatio}</td>
+                        <td className="p-3 text-[#137333]">Audited & Settled</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Zero-Fee Automated Billing Test Mode (MONET-030) */}
+            <div className="bg-white border border-[#E5E5E5] rounded-2xl p-6 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-base text-[#0F0F0F] flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5 text-[#065FD4]" />
+                    Zero-Transaction-Fee Local Test Mode for Billing Integrations
+                  </h3>
+                  <p className="text-xs text-[#606060] mt-0.5">
+                    Execute simulated atomic transactions (Memberships, Super Thanks) with $0.00 platform fees for CI/CD test automation.
+                  </p>
+                </div>
+                <button
+                  onClick={handleRunZeroFeeBillingTest}
+                  className="px-4 py-2 rounded-full bg-[#0F0F0F] hover:bg-[#272727] text-white text-xs font-semibold transition-all"
+                >
+                  Run Zero-Fee Test Transaction
+                </button>
+              </div>
+
+              {testBillingStatus && (
+                <div className="p-3 rounded-xl bg-green-50 border border-green-200 text-xs text-[#137333] font-semibold animate-in fade-in">
+                  {testBillingStatus}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 7. COMMENTS TAB */}
         {activeTab === 'comments' && (
           <div className="bg-white border border-[#E5E5E5] rounded-2xl p-6 shadow-sm space-y-4">
             <h3 className="font-bold text-base text-[#0F0F0F]">Channel Comments</h3>
@@ -568,33 +648,95 @@ export default function CreatorStudioPage() {
           </div>
         )}
 
-        {/* 7. CUSTOMIZATION TAB */}
+        {/* 8. CUSTOMIZATION & TAKEOUT TAB (CREAT-059, CREAT-060) */}
         {activeTab === 'customization' && (
-          <div className="bg-white border border-[#E5E5E5] rounded-2xl p-6 shadow-sm space-y-4 text-xs">
-            <h3 className="font-bold text-base text-[#0F0F0F]">Channel Customization</h3>
-            <div className="space-y-3">
-              <div>
-                <label className="font-bold text-[#0F0F0F] block mb-1">Channel Name</label>
-                <input
-                  type="text"
-                  defaultValue="VIONEX Engineering"
-                  className="p-2.5 rounded-xl border border-[#CCCCCC] w-full max-w-md outline-none text-[#0F0F0F]"
-                />
+          <div className="space-y-6">
+            {/* Takeout Export Archive (CREAT-060) */}
+            <div className="bg-white border border-[#E5E5E5] rounded-2xl p-6 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-base text-[#0F0F0F] flex items-center gap-2">
+                    <Archive className="w-5 h-5 text-[#065FD4]" />
+                    Channel Takeout Backup & Export Archive
+                  </h3>
+                  <p className="text-xs text-[#606060] mt-0.5">
+                    Download complete snapshot of your channel metadata, videos catalog, community polls, and analytics history.
+                  </p>
+                </div>
+                <button
+                  onClick={handleTakeoutExport}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#065FD4] hover:bg-[#0551B5] text-white text-xs font-semibold shadow-sm transition-all"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download Channel Backup Archive (JSON)</span>
+                </button>
               </div>
-              <div>
-                <label className="font-bold text-[#0F0F0F] block mb-1">Handle</label>
-                <input
-                  type="text"
-                  defaultValue="@vionex-labs"
-                  className="p-2.5 rounded-xl border border-[#CCCCCC] w-full max-w-md outline-none text-[#0F0F0F]"
-                />
+            </div>
+
+            {/* Live Chat Replay Archive Configuration (CREAT-059) */}
+            <div className="bg-white border border-[#E5E5E5] rounded-2xl p-6 shadow-sm space-y-4 text-xs">
+              <h3 className="font-bold text-base text-[#0F0F0F]">Live Chat Replay Archive Configuration</h3>
+              <p className="text-xs text-[#606060]">
+                Configure how live chat messages are preserved and synchronized with post-broadcast VOD recordings.
+              </p>
+              <div className="space-y-3 max-w-md pt-2">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={chatReplayConfig.enableChatReplay}
+                    onChange={(e) => setChatReplayConfig({ ...chatReplayConfig, enableChatReplay: e.target.checked })}
+                    className="w-4 h-4 rounded text-[#065FD4]"
+                  />
+                  <span className="font-semibold text-[#0F0F0F]">Enable Live Chat Replay on VOD</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={chatReplayConfig.syncWithVodTimestamp}
+                    onChange={(e) => setChatReplayConfig({ ...chatReplayConfig, syncWithVodTimestamp: e.target.checked })}
+                    className="w-4 h-4 rounded text-[#065FD4]"
+                  />
+                  <span className="font-semibold text-[#0F0F0F]">Synchronize chat messages with video timestamps</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={chatReplayConfig.anonymizeModeratedMessages}
+                    onChange={(e) => setChatReplayConfig({ ...chatReplayConfig, anonymizeModeratedMessages: e.target.checked })}
+                    className="w-4 h-4 rounded text-[#065FD4]"
+                  />
+                  <span className="font-semibold text-[#0F0F0F]">Exclude removed/moderated messages from archive</span>
+                </label>
               </div>
-              <button
-                onClick={() => alert('Channel settings updated.')}
-                className="px-4 py-2 rounded-full bg-[#065FD4] text-white font-semibold"
-              >
-                Save Changes
-              </button>
+            </div>
+
+            {/* Basic Customization */}
+            <div className="bg-white border border-[#E5E5E5] rounded-2xl p-6 shadow-sm space-y-4 text-xs">
+              <h3 className="font-bold text-base text-[#0F0F0F]">Channel Profile Settings</h3>
+              <div className="space-y-3 max-w-md">
+                <div>
+                  <label className="font-bold text-[#0F0F0F] block mb-1">Channel Name</label>
+                  <input
+                    type="text"
+                    defaultValue="VIONEX Engineering"
+                    className="p-2.5 rounded-xl border border-[#CCCCCC] w-full outline-none text-[#0F0F0F]"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-[#0F0F0F] block mb-1">Handle</label>
+                  <input
+                    type="text"
+                    defaultValue="@vionex-labs"
+                    className="p-2.5 rounded-xl border border-[#CCCCCC] w-full outline-none text-[#0F0F0F]"
+                  />
+                </div>
+                <button
+                  onClick={() => alert('Channel settings updated.')}
+                  className="px-4 py-2 rounded-full bg-[#0F0F0F] hover:bg-[#272727] text-white font-semibold"
+                >
+                  Save Changes
+                </button>
+              </div>
             </div>
           </div>
         )}

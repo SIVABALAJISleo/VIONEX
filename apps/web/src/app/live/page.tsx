@@ -2,15 +2,17 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Radio, Users, Heart, Share2, Send, DollarSign, CheckCircle2, MessageSquare } from 'lucide-react';
+import { Radio, Users, Heart, Share2, Send, DollarSign, CheckCircle2, MessageSquare, ExternalLink, BarChart3, X } from 'lucide-react';
 import Player from '@/components/Player';
 import { INITIAL_LIVE_STREAMS } from '@/lib/data';
+import { calculateStreamEndingSummary, LiveStreamSummary } from '@/lib/live';
 
 export default function LivePage() {
   const [activeStream, setActiveStream] = useState(INITIAL_LIVE_STREAMS[0]);
   const [chatMessages, setChatMessages] = useState(INITIAL_LIVE_STREAMS[0].chatMessages);
   const [newMsg, setNewMsg] = useState('');
   const [superChatAmount, setSuperChatAmount] = useState<string | null>(null);
+  const [streamSummary, setStreamSummary] = useState<LiveStreamSummary | null>(null);
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,6 +31,27 @@ export default function LivePage() {
     setSuperChatAmount(null);
   };
 
+  const handlePopoutChat = () => {
+    if (typeof window !== 'undefined') {
+      window.open(
+        `/embed/live/${activeStream.id}`,
+        `VionexChat_${activeStream.id}`,
+        'width=420,height=650,menubar=no,toolbar=no,location=no,status=no'
+      );
+    }
+  };
+
+  const handleShowStreamSummary = () => {
+    const summary = calculateStreamEndingSummary({
+      streamId: activeStream.id,
+      title: activeStream.title,
+      peakConcurrentViewers: 14850,
+      totalViews: 89400,
+      durationSeconds: 7500,
+    });
+    setStreamSummary(summary);
+  };
+
   return (
     <div className="max-w-[1720px] mx-auto p-4 sm:p-6 bg-white text-[#0F0F0F] min-h-[85vh]">
       <div className="flex flex-col lg:flex-row gap-6">
@@ -36,23 +59,34 @@ export default function LivePage() {
         <div className="flex-1 space-y-4">
           <div className="w-full rounded-2xl overflow-hidden bg-black shadow-sm aspect-video">
             <Player
-              src={activeStream.streamUrl}
+              videoUrl={activeStream.streamUrl}
               poster={activeStream.thumbnailUrl}
               title={activeStream.title}
-              channelName={activeStream.channel.name}
-              autoPlay={true}
+              author={activeStream.channel.name}
+              views={`${activeStream.viewers} watching now`}
+              publishedAt="Live now"
             />
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded bg-[#FF0000] text-white font-bold text-[10px] tracking-wider uppercase">
-                LIVE
-              </span>
-              <span className="text-xs text-[#606060] flex items-center gap-1 font-semibold">
-                <Users className="w-3.5 h-3.5 text-[#FF0000]" />
-                {activeStream.viewers} watching now
-              </span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded bg-[#FF0000] text-white font-bold text-[10px] tracking-wider uppercase animate-pulse">
+                  LIVE
+                </span>
+                <span className="text-xs text-[#606060] flex items-center gap-1 font-semibold">
+                  <Users className="w-3.5 h-3.5 text-[#FF0000]" />
+                  {activeStream.viewers} watching now
+                </span>
+              </div>
+              <button
+                onClick={handleShowStreamSummary}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F2F2F2] hover:bg-[#E5E5E5] text-xs font-semibold text-[#0F0F0F] transition-colors"
+                title="View Stream Ending Statistics Summary"
+              >
+                <BarChart3 className="w-3.5 h-3.5 text-[#065FD4]" />
+                <span>Stream Summary</span>
+              </button>
             </div>
 
             <h1 className="text-lg sm:text-xl font-bold text-[#0F0F0F]">
@@ -108,7 +142,16 @@ export default function LivePage() {
               <MessageSquare className="w-4 h-4 text-[#065FD4]" />
               Top chat
             </span>
-            <span className="text-[11px] text-[#606060] font-mono">Live</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-[#606060] font-mono">Live</span>
+              <button
+                onClick={handlePopoutChat}
+                className="p-1 rounded hover:bg-[#F2F2F2] text-[#606060] hover:text-[#0F0F0F] transition-colors"
+                title="Pop out live chat window (LIVE-029)"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
 
           {/* Messages Feed */}
@@ -165,6 +208,65 @@ export default function LivePage() {
           </form>
         </div>
       </div>
+
+      {/* Stream Ending Statistics Modal (LIVE-030) */}
+      {streamSummary && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-[#CCCCCC] space-y-4 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-[#E5E5E5] pb-3">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-[#065FD4]" />
+                <h3 className="font-bold text-base text-[#0F0F0F]">Stream Ending Statistics Summary</h3>
+              </div>
+              <button
+                onClick={() => setStreamSummary(null)}
+                className="p-1 rounded-full hover:bg-[#F2F2F2] text-[#606060]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="p-3 rounded-xl bg-[#F9F9F9] border border-[#E5E5E5]">
+                <div className="text-[#606060]">Peak Concurrent Viewers</div>
+                <div className="text-lg font-bold text-[#0F0F0F] mt-1">
+                  {streamSummary.metrics.peakConcurrentViewers.toLocaleString()}
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-[#F9F9F9] border border-[#E5E5E5]">
+                <div className="text-[#606060]">Total Watch Hours</div>
+                <div className="text-lg font-bold text-[#0F0F0F] mt-1">
+                  {streamSummary.metrics.totalWatchTimeHours.toLocaleString()} hrs
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-[#F9F9F9] border border-[#E5E5E5]">
+                <div className="text-[#606060]">New Subscribers</div>
+                <div className="text-lg font-bold text-[#107C41] mt-1">
+                  +{streamSummary.metrics.newSubscribersGained.toLocaleString()}
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-[#F9F9F9] border border-[#E5E5E5]">
+                <div className="text-[#606060]">Total Chat Messages</div>
+                <div className="text-lg font-bold text-[#0F0F0F] mt-1">
+                  {streamSummary.metrics.totalChatMessages.toLocaleString()}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-xs text-[#065FD4] flex items-center justify-between">
+              <span>Chat Replay Archive:</span>
+              <span className="font-semibold uppercase">{streamSummary.chatArchiveStatus}</span>
+            </div>
+
+            <button
+              onClick={() => setStreamSummary(null)}
+              className="w-full py-2.5 bg-[#0F0F0F] hover:bg-[#272727] text-white text-xs font-semibold rounded-full transition-colors"
+            >
+              Close Summary
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

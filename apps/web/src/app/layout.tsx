@@ -5,6 +5,7 @@ import Sidebar from '@/components/Sidebar';
 import { PlayerProvider } from '@/lib/PlayerContext';
 import Miniplayer from '@/components/Miniplayer';
 import KeyboardShortcutsModal from '@/components/KeyboardShortcutsModal';
+import CookieConsent from '@/components/CookieConsent';
 
 export const metadata: Metadata = {
   title: 'VIONEX - Original High-Performance Video Platform',
@@ -30,6 +31,7 @@ export default function RootLayout({
           </div>
           <Miniplayer />
           <KeyboardShortcutsModal />
+          <CookieConsent />
         </PlayerProvider>
       </body>
     </html>
