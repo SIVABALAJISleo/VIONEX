@@ -25,6 +25,7 @@ import {
   Zap
 } from 'lucide-react';
 import {
+  INITIAL_VIDEOS,
   getStoredVideos,
   addToHistory,
   toggleLikeVideo,
@@ -61,16 +62,20 @@ export default function WatchPage() {
   const rawId = (params?.id as string) || 'vid-demo-001';
   const videoId = rawId.replace('_', '-');
 
+  const initialVideo = INITIAL_VIDEOS.find(
+    (v) => v.id === videoId || v.id === rawId || v.id.replace('_', '-') === videoId
+  ) || INITIAL_VIDEOS[0];
+
   const { playVideo, isTheaterMode } = usePlayer();
 
-  const [video, setVideo] = useState<VideoItem | null>(null);
-  const [allVideos, setAllVideos] = useState<VideoItem[]>([]);
-  const [likes, setLikes] = useState(1420);
+  const [video, setVideo] = useState<VideoItem>(initialVideo);
+  const [allVideos, setAllVideos] = useState<VideoItem[]>(INITIAL_VIDEOS);
+  const [likes, setLikes] = useState(initialVideo.likesCount);
   const [isLiked, setIsLiked] = useState(false);
   const [isDisliked, setIsDisliked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
-  const [subCount, setSubCount] = useState(425000);
+  const [subCount, setSubCount] = useState(initialVideo.channel.subscribersCount || 425000);
   const [autoplayNext, setAutoplayNext] = useState(true);
   const [descExpanded, setDescExpanded] = useState(false);
 
