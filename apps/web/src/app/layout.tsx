@@ -18,13 +18,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className="min-h-screen flex flex-col bg-[#0b0c10] text-[#f8fafc] antialiased selection:bg-indigo-500/30 selection:text-indigo-200">
+    <html lang="en">
+      <body className="min-h-screen flex flex-col bg-white text-[#0F0F0F] antialiased selection:bg-red-500/20 selection:text-red-700">
         <PlayerProvider>
           <Header />
           <div className="flex flex-1 pt-14">
             <Sidebar />
-            <main className="flex-1 min-w-0 pb-16 md:pb-0 overflow-y-auto">
+            <main className="flex-1 min-w-0 pb-16 md:pb-0 overflow-y-auto bg-white">
               {children}
             </main>
           </div>
