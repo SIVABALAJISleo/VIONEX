@@ -29,7 +29,8 @@ import {
   ExternalLink,
   UploadCloud,
   LogOut,
-  UserCheck
+  UserCheck,
+  MessageSquare
 } from 'lucide-react';
 import {
   getStoredVideos,
@@ -229,6 +230,17 @@ export default function Header() {
           >
             <Plus className="w-4 h-4 text-[#0F0F0F]" />
             <span className="hidden md:inline">Create</span>
+          </Link>
+
+          {/* Messages Quick Access */}
+          <Link
+            href="/messages"
+            className="p-2 rounded-full hover:bg-[#F2F2F2] active:bg-[#E5E5E5] transition-colors text-[#0F0F0F] relative"
+            aria-label="VIONEX Messages"
+            title="VIONEX Messenger & E2EE Chats"
+          >
+            <MessageSquare className="w-5 h-5 text-[#0F0F0F]" />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-emerald-500 rounded-full" />
           </Link>
 
           {/* Notifications */}

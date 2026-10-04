@@ -16,7 +16,13 @@ import {
   Music,
   Gamepad2,
   Newspaper,
-  UserCheck
+  UserCheck,
+  MessageSquare,
+  Phone,
+  CircleDashed,
+  Users,
+  Megaphone,
+  Briefcase
 } from 'lucide-react';
 import { AUTHENTIC_CHANNELS } from '@/lib/data';
 
@@ -38,6 +44,15 @@ export default function Sidebar() {
     { label: 'Your Channel', href: '/channel/vionex', icon: UserCheck },
   ];
 
+
+  const commLinks = [
+    { label: 'Messages', href: '/messages', icon: MessageSquare },
+    { label: 'Calls', href: '/calls', icon: Phone },
+    { label: 'Status', href: '/status', icon: CircleDashed },
+    { label: 'Communities', href: '/communities', icon: Users },
+    { label: 'Channels', href: '/channels', icon: Megaphone },
+    { label: 'Business', href: '/business', icon: Briefcase },
+  ];
   const exploreLinks = [
     { label: 'Trending', href: '/explore', icon: Flame },
     { label: 'Music', href: '/explore', icon: Music },
