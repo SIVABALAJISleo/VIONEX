@@ -10,7 +10,8 @@
   "scripts": {
     "dev": "concurrently \"npm run dev -w @vionex/api\" \"npm run dev -w @vionex/web\" \"npm run start -w @vionex/media-worker\"",
     "build": "npm run build --workspaces",
-    "test": "vitest run",
+    "test": "ts-node -T tests/run-all-e2e.ts",
+    "test:e2e": "ts-node -T tests/run-all-e2e.ts",
     "sync": "node scripts/auto-sync.js",
     "sync:ps": "powershell -ExecutionPolicy Bypass -File scripts/auto-sync.ps1",
     "parity:report": "ts-node scripts/parity-report.ts",
