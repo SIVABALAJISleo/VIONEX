@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import VideoCard from '@/components/VideoCard';
 import { getStoredVideos, INITIAL_VIDEOS, INITIAL_SHORTS, VideoItem } from '@/lib/data';
@@ -25,26 +25,33 @@ export default function HomePage() {
     setVideos(getStoredVideos());
   }, []);
 
-  const filteredVideos = activeCategory === 'All'
-    ? videos
-    : videos.filter((v) =>
-        v.category.toLowerCase().includes(activeCategory.toLowerCase()) ||
-        v.tags.some(t => t.toLowerCase().includes(activeCategory.toLowerCase()))
-      );
+  const handleCategorySelect = useCallback((cat: string) => {
+    setActiveCategory(cat);
+  }, []);
+
+  const filteredVideos = useMemo(() => {
+    if (activeCategory === 'All') return videos;
+    const cat = activeCategory.toLowerCase();
+    return videos.filter((v) =>
+      v.category.toLowerCase().includes(cat) ||
+      v.tags.some(t => t.toLowerCase().includes(cat))
+    );
+  }, [activeCategory, videos]);
 
   return (
     <div className="p-4 sm:p-6 max-w-[1920px] mx-auto bg-white min-h-screen">
-      {/* Category Filter Pills (YouTube style with generous, clean vertical spacing) */}
-      <div className="sticky top-14 bg-white/95 backdrop-blur-md z-20 pt-2 pb-3 mb-6 border-b border-[#E5E5E5]/70">
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+      {/* Category Filter Pills (Generous, clean YouTube vertical clearance) */}
+      <div className="sticky top-14 bg-white/95 backdrop-blur-md z-20 pt-3 pb-5 mb-8 border-b border-[#E5E5E5]">
+        <div className="flex gap-2.5 overflow-x-auto pb-1.5 scrollbar-none">
           {CATEGORIES.map((cat) => (
             <button
               key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`px-3.5 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors ${
+              type="button"
+              onClick={() => handleCategorySelect(cat)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap cursor-pointer transition-all duration-75 select-none active:scale-95 ${
                 activeCategory === cat
-                  ? 'bg-[#0F0F0F] text-white font-medium'
-                  : 'bg-[#F2F2F2] hover:bg-[#E5E5E5] text-[#0F0F0F] font-normal'
+                  ? 'bg-[#0F0F0F] text-white shadow-sm'
+                  : 'bg-[#F2F2F2] hover:bg-[#E5E5E5] text-[#0F0F0F] hover:scale-[1.02]'
               }`}
             >
               {cat}
@@ -53,24 +60,26 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Main Video Grid (Top Row) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-x-4 gap-y-8 mt-2 mb-10">
-        {filteredVideos.slice(0, 4).map((video) => (
-          <VideoCard
-            key={video.id}
-            id={video.id}
-            title={video.title}
-            thumbnailUrl={video.thumbnailUrl}
-            duration={video.duration}
-            channel={video.channel}
-            viewsCount={video.viewsCount}
-            publishedAt={video.publishedAt}
-          />
-        ))}
+      {/* Main Video Grid with spacious top clearance */}
+      <div className="pt-2 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-x-4 gap-y-10">
+          {filteredVideos.slice(0, 4).map((video) => (
+            <VideoCard
+              key={video.id}
+              id={video.id}
+              title={video.title}
+              thumbnailUrl={video.thumbnailUrl}
+              duration={video.duration}
+              channel={video.channel}
+              viewsCount={video.viewsCount}
+              publishedAt={video.publishedAt}
+            />
+          ))}
+        </div>
       </div>
 
       {/* YouTube Shorts Shelf */}
-      <div className="pt-6 pb-6 my-8 border-t border-b border-[#E5E5E5] space-y-4">
+      <div className="pt-6 pb-6 my-10 border-t border-b border-[#E5E5E5] space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded bg-[#FF0000] flex items-center justify-center">
@@ -78,7 +87,7 @@ export default function HomePage() {
             </div>
             <h2 className="text-lg font-bold text-[#0F0F0F]">Shorts</h2>
           </div>
-          <Link href="/shorts" className="text-xs font-semibold text-[#065FD4] hover:underline">
+          <Link href="/shorts" prefetch={true} className="text-xs font-semibold text-[#065FD4] hover:underline cursor-pointer">
             View all
           </Link>
         </div>
@@ -95,7 +104,8 @@ export default function HomePage() {
               <Link
                 key={short.id}
                 href={`/shorts?id=${short.id}`}
-                className="group flex flex-col gap-2 relative"
+                prefetch={true}
+                className="group flex flex-col gap-2 relative cursor-pointer active:scale-[0.99] transition-transform"
               >
                 <div className="relative aspect-[9/16] rounded-xl overflow-hidden bg-[#E5E5E5] shadow-sm">
                   <div
@@ -119,7 +129,7 @@ export default function HomePage() {
       </div>
 
       {/* Remaining Videos Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-x-4 gap-y-8 mt-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-x-4 gap-y-10 mt-8 mb-12">
         {filteredVideos.slice(4).map((video) => (
           <VideoCard
             key={video.id}

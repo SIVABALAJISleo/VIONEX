@@ -12,16 +12,13 @@ import {
   Clock,
   ThumbsUp,
   ListVideo,
-  Settings,
-  HelpCircle,
-  Video,
   Flame,
   Music,
   Gamepad2,
   Newspaper,
   UserCheck
 } from 'lucide-react';
-import { getSubscriptions, INITIAL_VIDEOS } from '@/lib/data';
+import { AUTHENTIC_CHANNELS } from '@/lib/data';
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -38,7 +35,7 @@ export default function Sidebar() {
     { label: 'Playlists', href: '/playlists', icon: ListVideo },
     { label: 'Watch Later', href: '/watch-later', icon: Clock },
     { label: 'Liked Videos', href: '/liked', icon: ThumbsUp },
-    { label: 'Your Channel', href: '/channel/vionex-labs', icon: UserCheck },
+    { label: 'Your Channel', href: '/channel/vionex', icon: UserCheck },
   ];
 
   const exploreLinks = [
@@ -48,30 +45,42 @@ export default function Sidebar() {
     { label: 'News', href: '/explore', icon: Newspaper },
   ];
 
-  // Subscribed channels list with avatars
+  // Authentic creator channels with verified avatars
   const subscribedChannels = [
     {
-      handle: 'vionex-labs',
-      name: 'VIONEX Engineering',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=100&auto=format&fit=crop',
+      handle: AUTHENTIC_CHANNELS.mkbhd.handle,
+      name: AUTHENTIC_CHANNELS.mkbhd.name,
+      avatarUrl: AUTHENTIC_CHANNELS.mkbhd.avatarUrl,
       hasNew: true
     },
     {
-      handle: 'stream-engineering',
-      name: 'Stream Engineering Lab',
-      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=100&auto=format&fit=crop',
+      handle: AUTHENTIC_CHANNELS.fireship.handle,
+      name: AUTHENTIC_CHANNELS.fireship.name,
+      avatarUrl: AUTHENTIC_CHANNELS.fireship.avatarUrl,
+      hasNew: true
+    },
+    {
+      handle: AUTHENTIC_CHANNELS.veritasium.handle,
+      name: AUTHENTIC_CHANNELS.veritasium.name,
+      avatarUrl: AUTHENTIC_CHANNELS.veritasium.avatarUrl,
       hasNew: false
     },
     {
-      handle: 'hardware-benchmark',
-      name: 'Hardware Foundry',
-      avatarUrl: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?q=80&w=100&auto=format&fit=crop',
+      handle: AUTHENTIC_CHANNELS.kurzgesagt.handle,
+      name: AUTHENTIC_CHANNELS.kurzgesagt.name,
+      avatarUrl: AUTHENTIC_CHANNELS.kurzgesagt.avatarUrl,
       hasNew: true
+    },
+    {
+      handle: AUTHENTIC_CHANNELS.vionex.handle,
+      name: AUTHENTIC_CHANNELS.vionex.name,
+      avatarUrl: AUTHENTIC_CHANNELS.vionex.avatarUrl,
+      hasNew: false
     }
   ];
 
   return (
-    <aside className="w-60 bg-white border-r border-[#E5E5E5] hidden lg:flex flex-col py-3 px-3 shrink-0 h-[calc(100vh-56px)] sticky top-14 overflow-y-auto">
+    <aside className="w-60 bg-white border-r border-[#E5E5E5] hidden lg:flex flex-col py-3 px-3 shrink-0 h-[calc(100vh-56px)] sticky top-14 overflow-y-auto select-none">
       {/* 1. Main Navigation */}
       <div className="space-y-0.5 pb-3 border-b border-[#E5E5E5]">
         {mainLinks.map((item) => {
@@ -81,7 +90,8 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-5 px-3 py-2 rounded-xl text-sm transition-colors ${
+              prefetch={true}
+              className={`flex items-center gap-5 px-3 py-2 rounded-xl text-sm transition-all duration-75 cursor-pointer active:scale-[0.98] ${
                 isActive
                   ? 'bg-[#F2F2F2] text-[#0F0F0F] font-semibold'
                   : 'text-[#0F0F0F] hover:bg-[#F2F2F2] font-normal'
@@ -106,7 +116,8 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-5 px-3 py-2 rounded-xl text-sm transition-colors ${
+              prefetch={true}
+              className={`flex items-center gap-5 px-3 py-2 rounded-xl text-sm transition-all duration-75 cursor-pointer active:scale-[0.98] ${
                 isActive
                   ? 'bg-[#F2F2F2] text-[#0F0F0F] font-semibold'
                   : 'text-[#0F0F0F] hover:bg-[#F2F2F2] font-normal'
@@ -128,35 +139,37 @@ export default function Sidebar() {
           <Link
             key={ch.handle}
             href={`/channel/${ch.handle}`}
-            className="flex items-center justify-between px-3 py-2 rounded-xl text-sm text-[#0F0F0F] hover:bg-[#F2F2F2] transition-colors group"
+            prefetch={true}
+            className="flex items-center justify-between px-3 py-2 rounded-xl text-sm text-[#0F0F0F] hover:bg-[#F2F2F2] transition-all duration-75 group cursor-pointer active:scale-[0.98]"
           >
             <div className="flex items-center gap-4 min-w-0">
               <img
                 src={ch.avatarUrl}
                 alt={ch.name}
-                className="w-6 h-6 rounded-full object-cover shrink-0"
+                className="w-6 h-6 rounded-full object-cover shrink-0 border border-[#E5E5E5]"
               />
               <span className="truncate text-xs font-medium text-[#0F0F0F]">{ch.name}</span>
             </div>
             {ch.hasNew && (
-              <div className="w-1.5 h-1.5 rounded-full bg-[#065FD4] shrink-0 ml-1" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#065FD4] shrink-0" />
             )}
           </Link>
         ))}
       </div>
 
       {/* 4. Explore Section */}
-      <div className="pt-3 pb-3 border-b border-[#E5E5E5] space-y-0.5">
+      <div className="pt-3 pb-3 space-y-0.5">
         <div className="px-3 py-1 text-xs font-bold text-[#0F0F0F] uppercase tracking-wider">
           Explore
         </div>
-        {exploreLinks.map((item, idx) => {
+        {exploreLinks.map((item) => {
           const Icon = item.icon;
           return (
             <Link
-              key={idx}
+              key={item.label}
               href={item.href}
-              className="flex items-center gap-5 px-3 py-2 rounded-xl text-sm text-[#0F0F0F] hover:bg-[#F2F2F2] font-normal transition-colors"
+              prefetch={true}
+              className="flex items-center gap-5 px-3 py-2 rounded-xl text-sm text-[#0F0F0F] hover:bg-[#F2F2F2] transition-all duration-75 cursor-pointer active:scale-[0.98]"
             >
               <Icon className="w-5 h-5 text-[#0F0F0F]" />
               <span className="truncate">{item.label}</span>
@@ -165,46 +178,11 @@ export default function Sidebar() {
         })}
       </div>
 
-      {/* 5. More from VIONEX */}
-      <div className="pt-3 pb-3 border-b border-[#E5E5E5] space-y-0.5">
-        <div className="px-3 py-1 text-xs font-bold text-[#0F0F0F] uppercase tracking-wider">
-          More from VIONEX
-        </div>
-        <Link
-          href="/studio"
-          className={`flex items-center gap-5 px-3 py-2 rounded-xl text-sm transition-colors ${
-            pathname === '/studio'
-              ? 'bg-[#F2F2F2] text-[#0F0F0F] font-semibold'
-              : 'text-[#0F0F0F] hover:bg-[#F2F2F2] font-normal'
-          }`}
-        >
-          <Video className="w-5 h-5 text-[#FF0000]" />
-          <span className="truncate">VIONEX Studio</span>
-        </Link>
-      </div>
-
-      {/* 6. Settings & Help */}
-      <div className="pt-3 space-y-0.5 pb-4">
-        <Link
-          href="/settings"
-          className="flex items-center gap-5 px-3 py-2 rounded-xl text-sm text-[#0F0F0F] hover:bg-[#F2F2F2] font-normal transition-colors"
-        >
-          <Settings className="w-5 h-5 text-[#0F0F0F]" />
-          <span>Settings</span>
-        </Link>
-        <Link
-          href="/help"
-          className="flex items-center gap-5 px-3 py-2 rounded-xl text-sm text-[#0F0F0F] hover:bg-[#F2F2F2] font-normal transition-colors"
-        >
-          <HelpCircle className="w-5 h-5 text-[#0F0F0F]" />
-          <span>Help & Feedback</span>
-        </Link>
-
-        {/* Footer info */}
-        <div className="px-3 pt-4 text-[11px] text-[#909090] space-y-1">
-          <p>© 2026 VIONEX Inc.</p>
-          <p>High-Performance Video Platform</p>
-        </div>
+      {/* Footer Info */}
+      <div className="mt-auto pt-4 px-3 text-[11px] text-[#909090] space-y-2 border-t border-[#E5E5E5]">
+        <p className="leading-relaxed">About Press Copyright Contact us Creators Advertise</p>
+        <p className="leading-relaxed">Terms Privacy Policy & Safety How VIONEX works</p>
+        <p className="text-[10px] text-[#AAAAAA] pt-1">© 2026 VIONEX LLC</p>
       </div>
     </aside>
   );

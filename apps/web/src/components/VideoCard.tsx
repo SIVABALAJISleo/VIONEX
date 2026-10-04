@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import Link from 'next/link';
 import {
   CheckCircle2,
@@ -29,7 +29,7 @@ export interface VideoCardProps {
   isShort?: boolean;
 }
 
-export default function VideoCard({
+function VideoCardComponent({
   id,
   title,
   thumbnailUrl,
@@ -40,7 +40,7 @@ export default function VideoCard({
   isShort = false
 }: VideoCardProps) {
   const [showMenu, setShowMenu] = useState(false);
-  const [inWatchLater, setInWatchLater] = useState(isWatchLater(id));
+  const [inWatchLater, setInWatchLater] = useState(() => isWatchLater(id));
   const [copied, setCopied] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
 
@@ -88,7 +88,8 @@ export default function VideoCard({
       {/* Thumbnail Container */}
       <Link
         href={isShort ? `/shorts?id=${id}` : `/watch/${id}`}
-        className="relative aspect-video w-full rounded-xl overflow-hidden bg-[#E5E5E5] group-hover:rounded-none transition-all duration-200 shadow-sm"
+        prefetch={true}
+        className="relative aspect-video w-full rounded-xl overflow-hidden bg-[#E5E5E5] group-hover:rounded-none transition-all duration-200 shadow-sm cursor-pointer active:scale-[0.99]"
       >
         <div
           className="w-full h-full bg-cover bg-center group-hover:scale-105 transition-transform duration-300"
@@ -112,8 +113,8 @@ export default function VideoCard({
 
       {/* Meta Details */}
       <div className="flex gap-3 items-start px-0.5">
-        <Link href={`/channel/${channel.handle}`} className="shrink-0 mt-0.5">
-          <div className="w-9 h-9 rounded-full overflow-hidden border border-[#E5E5E5] bg-[#F2F2F2] flex items-center justify-center text-xs font-bold text-[#0F0F0F]">
+        <Link href={`/channel/${channel.handle}`} prefetch={true} className="shrink-0 mt-0.5 cursor-pointer">
+          <div className="w-9 h-9 rounded-full overflow-hidden border border-[#E5E5E5] bg-[#F2F2F2] flex items-center justify-center text-xs font-bold text-[#0F0F0F] transition-transform active:scale-95">
             {channel.avatarUrl ? (
               <img src={channel.avatarUrl} alt={channel.name} className="w-full h-full object-cover" />
             ) : (
@@ -123,14 +124,15 @@ export default function VideoCard({
         </Link>
 
         <div className="flex-1 min-w-0">
-          <Link href={isShort ? `/shorts?id=${id}` : `/watch/${id}`}>
-            <h3 className="font-semibold text-sm line-clamp-2 text-[#0F0F0F] leading-tight group-hover:text-[#0F0F0F]">
+          <Link href={isShort ? `/shorts?id=${id}` : `/watch/${id}`} prefetch={true} className="cursor-pointer">
+            <h3 className="font-semibold text-sm line-clamp-2 text-[#0F0F0F] leading-tight group-hover:text-[#0F0F0F] active:opacity-75 transition-opacity">
               {title}
             </h3>
           </Link>
           <Link
             href={`/channel/${channel.handle}`}
-            className="flex items-center gap-1 text-xs text-[#606060] hover:text-[#0F0F0F] mt-1 transition-colors"
+            prefetch={true}
+            className="flex items-center gap-1 text-xs text-[#606060] hover:text-[#0F0F0F] mt-1 transition-colors cursor-pointer"
           >
             <span className="truncate">{channel.name}</span>
             {channel.isVerified && <CheckCircle2 className="w-3.5 h-3.5 text-[#606060] shrink-0" />}
@@ -143,12 +145,13 @@ export default function VideoCard({
         {/* 3-Dots Menu Button */}
         <div className="relative">
           <button
+            type="button"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               setShowMenu(!showMenu);
             }}
-            className="p-1 rounded-full text-[#606060] hover:text-[#0F0F0F] hover:bg-[#F2F2F2] opacity-0 group-hover:opacity-100 transition-opacity"
+            className="p-1 rounded-full text-[#606060] hover:text-[#0F0F0F] hover:bg-[#F2F2F2] opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer active:scale-90"
             title="Action menu"
           >
             <MoreVertical className="w-4 h-4" />
@@ -161,27 +164,30 @@ export default function VideoCard({
               onClick={(e) => e.stopPropagation()}
             >
               <button
+                type="button"
                 onClick={handleToggleWatchLater}
-                className="w-full px-4 py-2 flex items-center gap-3 hover:bg-[#F2F2F2] transition-colors"
+                className="w-full px-4 py-2 flex items-center gap-3 hover:bg-[#F2F2F2] transition-colors cursor-pointer active:bg-[#E5E5E5]"
               >
                 <Clock className="w-4 h-4 text-[#606060]" />
                 <span>{inWatchLater ? 'Remove from Watch Later' : 'Save to Watch Later'}</span>
               </button>
               <button
+                type="button"
                 onClick={handleShare}
-                className="w-full px-4 py-2 flex items-center gap-3 hover:bg-[#F2F2F2] transition-colors"
+                className="w-full px-4 py-2 flex items-center gap-3 hover:bg-[#F2F2F2] transition-colors cursor-pointer active:bg-[#E5E5E5]"
               >
                 {copied ? <Check className="w-4 h-4 text-green-600" /> : <Share2 className="w-4 h-4 text-[#606060]" />}
                 <span>{copied ? 'Link Copied!' : 'Share Video'}</span>
               </button>
               <button
+                type="button"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   setIsHidden(true);
                   setShowMenu(false);
                 }}
-                className="w-full px-4 py-2 flex items-center gap-3 hover:bg-[#F2F2F2] text-red-600 transition-colors"
+                className="w-full px-4 py-2 flex items-center gap-3 hover:bg-[#F2F2F2] text-red-600 transition-colors cursor-pointer active:bg-red-50"
               >
                 <EyeOff className="w-4 h-4" />
                 <span>Hide Video</span>
@@ -193,3 +199,5 @@ export default function VideoCard({
     </div>
   );
 }
+
+export default memo(VideoCardComponent);

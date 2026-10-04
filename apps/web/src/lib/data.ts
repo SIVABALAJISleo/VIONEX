@@ -566,44 +566,86 @@ export function isHistoryPaused(): boolean {
   return localStorage.getItem('vionex_history_paused') === 'true';
 }
 
-export function getLikedVideos(): VideoItem[] {
-  if (IS_SERVER) return INITIAL_VIDEOS.slice(0, 3);
-  try {
-    const raw = localStorage.getItem('vionex_liked');
-    if (raw) {
-      const ids: string[] = JSON.parse(raw);
-      const all = getStoredVideos();
-      return ids.map(id => all.find(v => v.id === id)).filter(Boolean) as VideoItem[];
+let cachedLiked: Set<string> | null = null;
+let cachedWatchLater: Set<string> | null = null;
+let cachedSubs: Set<string> | null = null;
+
+export function getLikedVideoIds(): Set<string> {
+  if (IS_SERVER) return new Set([INITIAL_VIDEOS[0].id, INITIAL_VIDEOS[1].id, INITIAL_VIDEOS[2].id]);
+  if (!cachedLiked) {
+    try {
+      const raw = localStorage.getItem('vionex_liked');
+      const ids: string[] = raw ? JSON.parse(raw) : [INITIAL_VIDEOS[0].id, INITIAL_VIDEOS[1].id, INITIAL_VIDEOS[2].id];
+      cachedLiked = new Set(ids);
+    } catch {
+      cachedLiked = new Set([INITIAL_VIDEOS[0].id, INITIAL_VIDEOS[1].id, INITIAL_VIDEOS[2].id]);
     }
-  } catch {}
-  return INITIAL_VIDEOS.slice(0, 3);
+  }
+  return cachedLiked;
+}
+
+export function isVideoLiked(videoId: string): boolean {
+  return getLikedVideoIds().has(videoId);
 }
 
 export function toggleLikeVideo(videoId: string): boolean {
   if (IS_SERVER) return false;
   try {
-    const raw = localStorage.getItem('vionex_liked');
-    const ids: string[] = raw ? JSON.parse(raw) : [INITIAL_VIDEOS[0].id, INITIAL_VIDEOS[1].id, INITIAL_VIDEOS[2].id];
-    const isLiked = ids.includes(videoId);
-    let nextIds: string[];
+    const set = getLikedVideoIds();
+    const isLiked = set.has(videoId);
     if (isLiked) {
-      nextIds = ids.filter(id => id !== videoId);
+      set.delete(videoId);
     } else {
-      nextIds = [videoId, ...ids];
+      set.add(videoId);
     }
-    localStorage.setItem('vionex_liked', JSON.stringify(nextIds));
+    localStorage.setItem('vionex_liked', JSON.stringify(Array.from(set)));
     return !isLiked;
   } catch {
     return false;
   }
 }
 
-export function isVideoLiked(videoId: string): boolean {
+export function getLikedVideos(): VideoItem[] {
+  if (IS_SERVER) return INITIAL_VIDEOS.slice(0, 3);
+  try {
+    const ids = Array.from(getLikedVideoIds());
+    const all = getStoredVideos();
+    return ids.map(id => all.find(v => v.id === id)).filter(Boolean) as VideoItem[];
+  } catch {
+    return INITIAL_VIDEOS.slice(0, 3);
+  }
+}
+
+export function getWatchLaterIds(): Set<string> {
+  if (IS_SERVER) return new Set([INITIAL_VIDEOS[1].id, INITIAL_VIDEOS[2].id, INITIAL_VIDEOS[3].id]);
+  if (!cachedWatchLater) {
+    try {
+      const raw = localStorage.getItem('vionex_watch_later');
+      const ids: string[] = raw ? JSON.parse(raw) : [INITIAL_VIDEOS[1].id, INITIAL_VIDEOS[2].id, INITIAL_VIDEOS[3].id];
+      cachedWatchLater = new Set(ids);
+    } catch {
+      cachedWatchLater = new Set([INITIAL_VIDEOS[1].id, INITIAL_VIDEOS[2].id, INITIAL_VIDEOS[3].id]);
+    }
+  }
+  return cachedWatchLater;
+}
+
+export function isWatchLater(videoId: string): boolean {
+  return getWatchLaterIds().has(videoId);
+}
+
+export function toggleWatchLater(videoId: string): boolean {
   if (IS_SERVER) return false;
   try {
-    const raw = localStorage.getItem('vionex_liked');
-    const ids: string[] = raw ? JSON.parse(raw) : [INITIAL_VIDEOS[0].id, INITIAL_VIDEOS[1].id, INITIAL_VIDEOS[2].id];
-    return ids.includes(videoId);
+    const set = getWatchLaterIds();
+    const isSaved = set.has(videoId);
+    if (isSaved) {
+      set.delete(videoId);
+    } else {
+      set.add(videoId);
+    }
+    localStorage.setItem('vionex_watch_later', JSON.stringify(Array.from(set)));
+    return !isSaved;
   } catch {
     return false;
   }
@@ -612,43 +654,11 @@ export function isVideoLiked(videoId: string): boolean {
 export function getWatchLater(): VideoItem[] {
   if (IS_SERVER) return INITIAL_VIDEOS.slice(1, 4);
   try {
-    const raw = localStorage.getItem('vionex_watch_later');
-    if (raw) {
-      const ids: string[] = JSON.parse(raw);
-      const all = getStoredVideos();
-      return ids.map(id => all.find(v => v.id === id)).filter(Boolean) as VideoItem[];
-    }
-  } catch {}
-  return INITIAL_VIDEOS.slice(1, 4);
-}
-
-export function toggleWatchLater(videoId: string): boolean {
-  if (IS_SERVER) return false;
-  try {
-    const raw = localStorage.getItem('vionex_watch_later');
-    const ids: string[] = raw ? JSON.parse(raw) : [INITIAL_VIDEOS[1].id, INITIAL_VIDEOS[2].id, INITIAL_VIDEOS[3].id];
-    const isSaved = ids.includes(videoId);
-    let nextIds: string[];
-    if (isSaved) {
-      nextIds = ids.filter(id => id !== videoId);
-    } else {
-      nextIds = [videoId, ...ids];
-    }
-    localStorage.setItem('vionex_watch_later', JSON.stringify(nextIds));
-    return !isSaved;
+    const ids = Array.from(getWatchLaterIds());
+    const all = getStoredVideos();
+    return ids.map(id => all.find(v => v.id === id)).filter(Boolean) as VideoItem[];
   } catch {
-    return false;
-  }
-}
-
-export function isWatchLater(videoId: string): boolean {
-  if (IS_SERVER) return false;
-  try {
-    const raw = localStorage.getItem('vionex_watch_later');
-    const ids: string[] = raw ? JSON.parse(raw) : [INITIAL_VIDEOS[1].id, INITIAL_VIDEOS[2].id, INITIAL_VIDEOS[3].id];
-    return ids.includes(videoId);
-  } catch {
-    return false;
+    return INITIAL_VIDEOS.slice(1, 4);
   }
 }
 
@@ -715,20 +725,29 @@ export function deletePlaylist(playlistId: string): boolean {
 
 export function getSubscriptions(): string[] {
   if (IS_SERVER) return ['mkbhd', 'fireship', 'veritasium', 'vionex'];
-  try {
-    const raw = localStorage.getItem('vionex_subscriptions');
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return ['mkbhd', 'fireship', 'veritasium', 'vionex'];
+  if (!cachedSubs) {
+    try {
+      const raw = localStorage.getItem('vionex_subscriptions');
+      const subs: string[] = raw ? JSON.parse(raw) : ['mkbhd', 'fireship', 'veritasium', 'vionex'];
+      cachedSubs = new Set(subs);
+    } catch {
+      cachedSubs = new Set(['mkbhd', 'fireship', 'veritasium', 'vionex']);
+    }
+  }
+  return Array.from(cachedSubs);
 }
 
 export function toggleSubscription(channelHandle: string): boolean {
   if (IS_SERVER) return false;
   try {
-    const subs = getSubscriptions();
-    const isSubbed = subs.includes(channelHandle);
-    const nextSubs = isSubbed ? subs.filter(s => s !== channelHandle) : [...subs, channelHandle];
-    localStorage.setItem('vionex_subscriptions', JSON.stringify(nextSubs));
+    getSubscriptions(); // Ensure initialized
+    const isSubbed = cachedSubs!.has(channelHandle);
+    if (isSubbed) {
+      cachedSubs!.delete(channelHandle);
+    } else {
+      cachedSubs!.add(channelHandle);
+    }
+    localStorage.setItem('vionex_subscriptions', JSON.stringify(Array.from(cachedSubs!)));
     return !isSubbed;
   } catch {
     return false;
