@@ -1,6 +1,5 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  darkMode: 'class',
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -9,16 +8,29 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: '#0f0f13',
-        surface: '#18181f',
-        surfaceHover: '#23232c',
+        background: '#FFFFFF',
+        surface: '#FFFFFF',
+        surfaceHover: '#F2F2F2',
+        surfaceSelected: '#E5E5E5',
+        border: '#E5E5E5',
+        textPrimary: '#0F0F0F',
+        textSecondary: '#606060',
+        muted: '#909090',
         primary: {
-          DEFAULT: '#6366f1',
-          hover: '#4f46e5'
+          DEFAULT: '#FF0000',
+          hover: '#CC0000'
         },
-        accent: '#ec4899',
-        border: '#2e2e38',
-        muted: '#94a3b8'
+        yt: {
+          red: '#FF0000',
+          redHover: '#CC0000',
+          bg: '#FFFFFF',
+          text: '#0F0F0F',
+          textSec: '#606060',
+          muted: '#909090',
+          border: '#E5E5E5',
+          hover: '#F2F2F2',
+          badge: '#F2F2F2'
+        }
       },
       aspectRatio: {
         '16/9': '16 / 9',
@@ -27,4 +39,4 @@ module.exports = {
     },
   },
   plugins: [],
-}
+};
