@@ -87,7 +87,7 @@ export async function paymentRoutes(app: FastifyInstance) {
           type: 'MEMBERSHIP_FEE',
           amountCents: BigInt(amountCents || 499),
           feeCents: BigInt(30),
-          status: 'COMPLETED',
+          status: 'SETTLED',
           description: `Channel membership fee for channel ${channelId}`
         }
       });
@@ -97,7 +97,6 @@ export async function paymentRoutes(app: FastifyInstance) {
         where: { channelId }
       });
       if (!plan) {
-        // Find channel to ensure valid foreign key or create plan
         const ch = await tx.channel.findUnique({ where: { id: channelId } });
         if (ch) {
           plan = await tx.subscriptionPlan.create({
@@ -112,7 +111,6 @@ export async function paymentRoutes(app: FastifyInstance) {
 
       let membershipId = null;
       if (plan) {
-        // Upsert Channel Membership Entitlement
         const membership = await tx.membership.upsert({
           where: { planId_userId: { planId: plan.id, userId } },
           create: {
