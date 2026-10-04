@@ -39,9 +39,9 @@ export default function HomePage() {
   }, [activeCategory, videos]);
 
   return (
-    <div className="p-4 sm:p-6 max-w-[1920px] mx-auto bg-white min-h-screen">
-      {/* Category Filter Pills (Generous, clean YouTube vertical clearance) */}
-      <div className="sticky top-14 bg-white/95 backdrop-blur-md z-20 pt-3 pb-5 mb-8 border-b border-[#E5E5E5]">
+    <div className="px-4 sm:px-6 pt-0 pb-6 max-w-[1920px] mx-auto bg-white min-h-screen">
+      {/* Category Filter Pills (Reduced top space under header line, YouTube-accurate) */}
+      <div className="sticky top-14 bg-white/95 backdrop-blur-md z-20 pt-2 pb-3 mb-6 border-b border-[#E5E5E5]">
         <div className="flex gap-2.5 overflow-x-auto pb-1.5 scrollbar-none">
           {CATEGORIES.map((cat) => (
             <button
