@@ -151,6 +151,7 @@ model User {
   auditLogs         AuditLog[]
   wallet            Wallet?
   userSecurity      UserSecurity?
+  communicationIdentity CommunicationIdentity?
 
   @@index([email])
   @@index([username])
@@ -807,4 +808,306 @@ model ChannelAnalytics {
 
   @@unique([channelId, date])
   @@index([channelId, date])
+}
+
+// -------------------------------------------------------------
+// VIONEX COMMUNICATION EXPANSION SUBSYSTEM
+// -------------------------------------------------------------
+
+enum CommunicationDeviceStatus {
+  UNVERIFIED
+  VERIFIED
+  BLOCKED
+  REVOKED
+}
+
+enum CallType {
+  VOICE_DIRECT
+  VIDEO_DIRECT
+  VOICE_GROUP
+  VIDEO_GROUP
+}
+
+enum CallStatus {
+  RINGING
+  CONNECTED
+  RECONNECTING
+  COMPLETED
+  BUSY
+  MISSED
+  DECLINED
+  FAILED
+}
+
+enum StatusPrivacyMode {
+  CONTACTS_ONLY
+  SELECTED_AUDIENCE
+  EXCLUDE_SPECIFIC
+}
+
+enum CommunityRole {
+  OWNER
+  ADMIN
+  MODERATOR
+  MEMBER
+}
+
+enum BusinessRole {
+  OWNER
+  ADMIN
+  SUPERVISOR
+  AGENT
+}
+
+model CommunicationIdentity {
+  id                   String                  @id @default(uuid())
+  userId               String                  @unique
+  user                 User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matrixUserId         String                  @unique
+  publicKeyFingerprint String?
+  isE2EEActive         Boolean                 @default(true)
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+
+  devices              CommunicationDevice[]
+  statuses             Status[]
+  statusViews          StatusView[]
+  statusReactions      StatusReaction[]
+  communityMemberships CommunityMember[]
+  channelFollows       ChannelFollower[]
+  callsParticipated    CallParticipant[]
+  businessAccount      BusinessAccount?
+
+  @@index([userId])
+  @@index([matrixUserId])
+}
+
+model CommunicationDevice {
+  id              String                    @id @default(uuid())
+  identityId      String
+  identity        CommunicationIdentity     @relation(fields: [identityId], references: [id], onDelete: Cascade)
+  deviceId        String                    @unique
+  deviceName      String
+  platform        String                    // "web", "ios", "android", "desktop"
+  clientIp        String?
+  userAgent       String?
+  status          CommunicationDeviceStatus @default(UNVERIFIED)
+  crossSignedKey  String?
+  lastSeenAt      DateTime                  @default(now())
+  createdAt       DateTime                  @default(now())
+  revokedAt       DateTime?
+
+  @@index([identityId])
+  @@index([deviceId])
+}
+
+model CallSession {
+  id            String            @id @default(uuid())
+  initiatorId   String
+  callType      CallType
+  status        CallStatus        @default(RINGING)
+  liveKitRoomId String            @unique
+  startedAt     DateTime          @default(now())
+  connectedAt   DateTime?
+  endedAt       DateTime?
+  durationSec   Int               @default(0)
+
+  participants  CallParticipant[]
+
+  @@index([initiatorId])
+  @@index([status])
+}
+
+model CallParticipant {
+  id          String                @id @default(uuid())
+  callId      String
+  call        CallSession           @relation(fields: [callId], references: [id], onDelete: Cascade)
+  identityId  String
+  identity    CommunicationIdentity @relation(fields: [identityId], references: [id], onDelete: Cascade)
+  role        String                @default("PARTICIPANT") // CALLER, CALLEE, ADMIN
+  isMuted     Boolean               @default(false)
+  isCameraOff Boolean               @default(false)
+  joinedAt    DateTime              @default(now())
+  leftAt      DateTime?
+
+  @@unique([callId, identityId])
+}
+
+model Status {
+  id          String            @id @default(uuid())
+  authorId    String
+  author      CommunicationIdentity @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  contentType String            // "TEXT", "IMAGE", "VIDEO", "VIONEX_SHARE"
+  text        String?
+  mediaUrl    String?
+  vionexRef   Json?             // { type: "VIDEO", id: "vid-123", timestamp: 42 }
+  privacyMode StatusPrivacyMode @default(CONTACTS_ONLY)
+  createdAt   DateTime          @default(now())
+  expiresAt   DateTime          // Strictly enforced 24h expiration
+
+  audiences   StatusAudience[]
+  views       StatusView[]
+  reactions   StatusReaction[]
+
+  @@index([authorId])
+  @@index([expiresAt])
+}
+
+model StatusAudience {
+  id          String   @id @default(uuid())
+  statusId    String
+  status      Status   @relation(fields: [statusId], references: [id], onDelete: Cascade)
+  targetId    String   // VIONEX User ID granted/excluded
+  isExcluded  Boolean  @default(false)
+
+  @@unique([statusId, targetId])
+}
+
+model StatusView {
+  id          String                @id @default(uuid())
+  statusId    String
+  status      Status                @relation(fields: [statusId], references: [id], onDelete: Cascade)
+  viewerId    String
+  viewer      CommunicationIdentity @relation(fields: [viewerId], references: [id], onDelete: Cascade)
+  viewedAt    DateTime              @default(now())
+
+  @@unique([statusId, viewerId])
+}
+
+model StatusReaction {
+  id          String                @id @default(uuid())
+  statusId    String
+  status      Status                @relation(fields: [statusId], references: [id], onDelete: Cascade)
+  userId      String
+  user        CommunicationIdentity @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emoji       String
+  createdAt   DateTime              @default(now())
+
+  @@unique([statusId, userId])
+}
+
+model Community {
+  id          String            @id @default(uuid())
+  name        String
+  description String?
+  avatarUrl   String?
+  bannerUrl   String?
+  isVerified  Boolean           @default(false)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  members     CommunityMember[]
+  channels    CommunityTopic[]
+
+  @@index([name])
+}
+
+model CommunityMember {
+  id          String                @id @default(uuid())
+  communityId String
+  community   Community             @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  identityId  String
+  identity    CommunicationIdentity @relation(fields: [identityId], references: [id], onDelete: Cascade)
+  role        CommunityRole         @default(MEMBER)
+  joinedAt    DateTime              @default(now())
+
+  @@unique([communityId, identityId])
+}
+
+model CommunityTopic {
+  id          String    @id @default(uuid())
+  communityId String
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  isAnnouncementOnly Boolean @default(false)
+  createdAt   DateTime  @default(now())
+}
+
+model ChannelBroadcast {
+  id          String            @id @default(uuid())
+  ownerId     String
+  name        String
+  slug        String            @unique
+  description String?
+  iconUrl     String?
+  isVerified  Boolean           @default(false)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  followers   ChannelFollower[]
+  posts       ChannelPost[]
+
+  @@index([slug])
+}
+
+model ChannelFollower {
+  id          String                @id @default(uuid())
+  channelId   String
+  channel     ChannelBroadcast      @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  identityId  String
+  identity    CommunicationIdentity @relation(fields: [identityId], references: [id], onDelete: Cascade)
+  followedAt  DateTime              @default(now())
+
+  @@unique([channelId, identityId])
+}
+
+model ChannelPost {
+  id          String           @id @default(uuid())
+  channelId   String
+  channel     ChannelBroadcast @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  content     String
+  mediaUrls   String[]         @default([])
+  vionexRef   Json?            // Native video/short/live stream embed reference
+  reactions   Json             @default("{}") // { "🔥": 42, "❤️": 89 }
+  viewsCount  Int              @default(0)
+  createdAt   DateTime         @default(now())
+
+  @@index([channelId, createdAt])
+}
+
+model BusinessAccount {
+  id          String                @id @default(uuid())
+  identityId  String                @unique
+  identity    CommunicationIdentity @relation(fields: [identityId], references: [id], onDelete: Cascade)
+  name        String
+  category    String
+  description String?
+  website     String?
+  phone       String?
+  hours       Json?                 // Mon-Fri 09:00 - 18:00
+  welcomeMsg  String?
+  awayMsg     String?
+  isVerified  Boolean               @default(false)
+  createdAt   DateTime              @default(now())
+
+  catalog     BusinessCatalogItem[]
+  agents      BusinessAgent[]
+}
+
+model BusinessCatalogItem {
+  id          String          @id @default(uuid())
+  businessId  String
+  business    BusinessAccount @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  priceCents  Int
+  currency    String          @default("USD")
+  imageUrl    String?
+  sku         String?
+  isAvailable Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+
+  @@index([businessId])
+}
+
+model BusinessAgent {
+  id          String          @id @default(uuid())
+  businessId  String
+  business    BusinessAccount @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId      String
+  role        BusinessRole    @default(AGENT)
+  assignedAt  DateTime        @default(now())
+
+  @@unique([businessId, userId])
 }
