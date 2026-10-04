@@ -101,378 +101,357 @@ export interface NotificationItem {
   videoId?: string;
 }
 
+export const AUTHENTIC_CHANNELS: Record<string, Channel> = {
+  mkbhd: {
+    handle: 'mkbhd',
+    name: 'Marques Brownlee',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop',
+    isVerified: true,
+    subscribers: '18.5M subscribers',
+    subscribersCount: 18500000,
+    bannerUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1600&auto=format&fit=crop',
+    bio: 'Quality tech videos | YouTuber | Geek | Consumer electronics reviews and deep dives.'
+  },
+  fireship: {
+    handle: 'fireship',
+    name: 'Fireship',
+    avatarUrl: 'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?q=80&w=200&auto=format&fit=crop',
+    isVerified: true,
+    subscribers: '3.2M subscribers',
+    subscribersCount: 3200000,
+    bannerUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=1600&auto=format&fit=crop',
+    bio: 'High-intensity code tutorials and tech news to help you ship apps faster.'
+  },
+  veritasium: {
+    handle: 'veritasium',
+    name: 'Veritasium',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop',
+    isVerified: true,
+    subscribers: '16.2M subscribers',
+    subscribersCount: 16200000,
+    bannerUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1600&auto=format&fit=crop',
+    bio: 'An element of truth - videos about physics, science, education, and anything interesting.'
+  },
+  lexfridman: {
+    handle: 'lexfridman',
+    name: 'Lex Fridman',
+    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=200&auto=format&fit=crop',
+    isVerified: true,
+    subscribers: '4.3M subscribers',
+    subscribersCount: 4300000,
+    bannerUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1600&auto=format&fit=crop',
+    bio: 'Conversations about AI, science, technology, history, philosophy, and the human condition.'
+  },
+  traversymedia: {
+    handle: 'traversymedia',
+    name: 'Traversy Media',
+    avatarUrl: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?q=80&w=200&auto=format&fit=crop',
+    isVerified: true,
+    subscribers: '2.2M subscribers',
+    subscribersCount: 2200000,
+    bannerUrl: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1600&auto=format&fit=crop',
+    bio: 'Practical, project-based tutorials on web development, modern frontend, and backend architecture.'
+  },
+  kurzgesagt: {
+    handle: 'kurzgesagt',
+    name: 'Kurzgesagt – In a Nutshell',
+    avatarUrl: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=200&auto=format&fit=crop',
+    isVerified: true,
+    subscribers: '22.8M subscribers',
+    subscribersCount: 22800000,
+    bannerUrl: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=1600&auto=format&fit=crop',
+    bio: 'Videos explaining things with optimistic nihilism. We make science look beautiful and accessible.'
+  },
+  lofigirl: {
+    handle: 'lofigirl',
+    name: 'Lofi Girl',
+    avatarUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=200&auto=format&fit=crop',
+    isVerified: true,
+    subscribers: '14.5M subscribers',
+    subscribersCount: 14500000,
+    bannerUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1600&auto=format&fit=crop',
+    bio: 'Peaceful lofi hip hop radio - beats to relax/study to 24/7.'
+  },
+  vionex: {
+    handle: 'vionex',
+    name: 'VIONEX Engineering',
+    avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200&auto=format&fit=crop',
+    isVerified: true,
+    subscribers: '540K subscribers',
+    subscribersCount: 540000,
+    bannerUrl: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=1600&auto=format&fit=crop',
+    bio: 'Official engineering channel for VIONEX: ABR streaming, WebRTC P2P delivery, and scalable media pipelines.'
+  }
+};
+
 export const INITIAL_VIDEOS: VideoItem[] = [
   {
     id: 'vid-demo-001',
-    title: 'Building a Full-Scale YouTube Platform from Scratch with Next.js & Fastify',
-    description: 'In this session, we architect and build VIONEX — a scalable, production-ready, self-hostable video platform designed with clean TypeScript, Fastify REST APIs, BullMQ asynchronous FFmpeg media processing, and WebRTC P2P-assisted HLS playback.',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1280&auto=format&fit=crop',
-    duration: 1845,
-    durationFormatted: '30:45',
-    videoUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
-    channel: {
-      handle: 'vionex-labs',
-      name: 'VIONEX Engineering',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop',
-      isVerified: true,
-      subscribers: '425K subscribers',
-      subscribersCount: 425000,
-      bannerUrl: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=1600&auto=format&fit=crop',
-      bio: 'Deep-dive software architecture, high throughput distributed systems, and modern video streaming engineering.'
-    },
-    viewsCount: '124,500',
-    viewsNumeric: 124500,
-    likesCount: 1420,
+    title: 'Sintel: Open CGI Master Animation & Visual Fidelity Breakdown',
+    description: 'Complete open-source CGI master animation rendered in Blender Cycles. Demonstrates procedural particle hair dynamics, volumetric smoke shading, and multi-channel audio mixing.',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1280&auto=format&fit=crop',
+    duration: 52,
+    durationFormatted: '0:52',
+    videoUrl: '/videos/short-3.mp4',
+    channel: AUTHENTIC_CHANNELS.kurzgesagt,
+    viewsCount: '1,240,500',
+    viewsNumeric: 1240500,
+    likesCount: 94200,
     publishedAt: '2 days ago',
     category: 'Technology',
-    tags: ['Architecture', 'Next.js', 'Fastify', 'Streaming', 'TypeScript'],
-    commentsCount: 148
+    tags: ['Blender', 'CGI', 'OpenSource', 'Animation', 'Science'],
+    commentsCount: 1840
   },
   {
     id: 'vid-demo-002',
-    title: 'Ultra-Low Latency Live Streaming with Node.js, RTMP, and WebRTC Datachannels',
-    description: 'Explore the internals of media servers: converting RTMP broadcast feeds to sub-second low latency HLS (LL-HLS) alongside peer-to-peer data swarming for 80% CDN egress reduction.',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1280&auto=format&fit=crop',
-    duration: 2540,
-    durationFormatted: '42:20',
-    videoUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
-    channel: {
-      handle: 'stream-engineering',
-      name: 'Stream Engineering Lab',
-      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop',
-      isVerified: true,
-      subscribers: '180K subscribers',
-      subscribersCount: 180000,
-      bannerUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1600&auto=format&fit=crop',
-      bio: 'Pioneering open media delivery networks and distributed video pipelines.'
-    },
-    viewsCount: '89,200',
-    viewsNumeric: 89200,
-    likesCount: 940,
+    title: 'View From A Blue Moon: 4K Cinematic Action Camera Breakdown',
+    description: 'Dissecting the RED 6K digital cinema sensors, aerial helicopter gimbals, and wide color gamut HDR mastering used in high-velocity outdoor cinematography.',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1280&auto=format&fit=crop',
+    duration: 183,
+    durationFormatted: '3:03',
+    videoUrl: '/videos/blue_moon.mp4',
+    channel: AUTHENTIC_CHANNELS.mkbhd,
+    viewsCount: '3,489,200',
+    viewsNumeric: 3489200,
+    likesCount: 182400,
     publishedAt: '4 days ago',
-    category: 'Coding',
-    tags: ['LiveStreaming', 'WebRTC', 'RTMP', 'FFmpeg'],
-    commentsCount: 92
+    category: 'Technology',
+    tags: ['Technology', 'Cameras', 'MKBHD', 'Cinematography', 'HDR'],
+    commentsCount: 3910
   },
   {
     id: 'vid-demo-003',
-    title: 'Adaptive Bitrate Transcoding Pipelines: FFmpeg Aligned Keyframes & HLS Demystified',
-    description: 'Learn why aligned keyframes (GOP size = 2s) are mandatory for seamless multi-rendition HLS switching without audio pops or video drops. Hands-on commandline benchmarking included.',
+    title: 'Real-Time Edge AI & Object Detection with YOLOv10 in 100 Seconds',
+    description: 'How modern convolution-free vision transformers and YOLO edge models achieve 120 FPS object classification directly in WebGPU browser runtimes.',
     thumbnailUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=1280&auto=format&fit=crop',
-    duration: 1120,
-    durationFormatted: '18:40',
-    videoUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
-    channel: {
-      handle: 'dev-ops-elite',
-      name: 'DevOps Elite',
-      avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=200&auto=format&fit=crop',
-      isVerified: true,
-      subscribers: '310K subscribers',
-      subscribersCount: 310000,
-      bannerUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1600&auto=format&fit=crop',
-      bio: 'Cloud-native CI/CD, Kubernetes video rendering clusters, and media worker pipelines.'
-    },
-    viewsCount: '45,100',
-    viewsNumeric: 45100,
-    likesCount: 512,
+    duration: 54,
+    durationFormatted: '0:54',
+    videoUrl: '/videos/short-2.mp4',
+    channel: AUTHENTIC_CHANNELS.fireship,
+    viewsCount: '1,845,100',
+    viewsNumeric: 1845100,
+    likesCount: 112500,
     publishedAt: '1 week ago',
     category: 'Coding',
-    tags: ['FFmpeg', 'Transcoding', 'HLS', 'MediaWorker'],
-    commentsCount: 46
+    tags: ['Coding', 'AI', 'YOLO', 'WebGPU', 'Fireship'],
+    commentsCount: 2450
   },
   {
     id: 'vid-demo-004',
-    title: 'Atmospheric Ambient Light & Canvas Shaders in HTML5 Video Players',
-    description: 'How to build the modern dynamic lighting glow around video players using hidden offscreen canvas downsampling and CSS blur filters at 60fps.',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?q=80&w=1280&auto=format&fit=crop',
-    duration: 890,
-    durationFormatted: '14:50',
-    videoUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
-    channel: {
-      handle: 'frontend-masters-lab',
-      name: 'Frontend Masters Lab',
-      avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=200&auto=format&fit=crop',
-      isVerified: true,
-      subscribers: '650K subscribers',
-      subscribersCount: 650000,
-      bannerUrl: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=1600&auto=format&fit=crop',
-      bio: 'Crafting pixel-perfect animations, canvas rendering engines, and cutting-edge user interfaces.'
-    },
-    viewsCount: '215,800',
-    viewsNumeric: 215800,
-    likesCount: 3200,
+    title: 'Deep Marine Ecosystems: Bioluminescence & Abyssal Physics',
+    description: 'An exploration into deep ocean trenches, hydrostatic pressure adaptation, and the physics of underwater light propagation in total darkness.',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=1280&auto=format&fit=crop',
+    duration: 46,
+    durationFormatted: '0:46',
+    videoUrl: '/videos/oceans.mp4',
+    channel: AUTHENTIC_CHANNELS.veritasium,
+    viewsCount: '4,215,800',
+    viewsNumeric: 4215800,
+    likesCount: 231000,
     publishedAt: '3 days ago',
-    category: 'Technology',
-    tags: ['Frontend', 'Canvas', 'WebGL', 'UIUX'],
-    commentsCount: 210
+    category: 'Science',
+    tags: ['Science', 'Physics', 'Oceans', 'Veritasium', 'Biology'],
+    commentsCount: 4120
   },
   {
     id: 'vid-demo-005',
-    title: 'Next-Gen Graphics Architecture: Path Tracing Hardware Deep Dive 2026',
-    description: 'A deep architectural dissection of modern GPU acceleration cores, hardware BVH traversal units, and neural reconstruction denoisers.',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1280&auto=format&fit=crop',
-    duration: 3200,
-    durationFormatted: '53:20',
+    title: 'Big Buck Bunny: Adaptive Multi-Bitrate HLS Master Stream & Audio Sync',
+    description: 'High-definition 1080p 60fps open-source reference stream with seamless multi-rendition switching, synchronized AAC stereo audio, and GOP-aligned keyframes.',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1280&auto=format&fit=crop',
+    duration: 634,
+    durationFormatted: '10:34',
     videoUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
-    channel: {
-      handle: 'hardware-benchmark',
-      name: 'Hardware Foundry',
-      avatarUrl: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?q=80&w=200&auto=format&fit=crop',
-      isVerified: true,
-      subscribers: '540K subscribers',
-      subscribersCount: 540000,
-      bannerUrl: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1600&auto=format&fit=crop',
-      bio: 'Frame-precise GPU analysis, graphics architectures, and game engine benchmarks.'
-    },
-    viewsCount: '584,100',
-    viewsNumeric: 584100,
-    likesCount: 7200,
+    channel: AUTHENTIC_CHANNELS.traversymedia,
+    viewsCount: '2,584,100',
+    viewsNumeric: 2584100,
+    likesCount: 89400,
     publishedAt: '5 days ago',
-    category: 'Gaming',
-    tags: ['Gaming', 'Hardware', 'PathTracing', 'Benchmarks'],
-    commentsCount: 630
+    category: 'HLS Streaming',
+    tags: ['HLS', 'Streaming', 'WebRTC', 'Technology', 'AudioSync'],
+    commentsCount: 1680
   },
   {
     id: 'vid-demo-006',
-    title: 'Quantum Computing in 2026: Quantum Error Correction Explained Simply',
-    description: 'A clear conceptual breakthrough walkthrough explaining surface code error correction and logical qubits without dense mathematical jargon.',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=1280&auto=format&fit=crop',
-    duration: 1780,
-    durationFormatted: '29:40',
-    videoUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
-    channel: {
-      handle: 'quantum-frontier',
-      name: 'Quantum Frontier',
-      avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200&auto=format&fit=crop',
-      isVerified: true,
-      subscribers: '720K subscribers',
-      subscribersCount: 720000,
-      bannerUrl: 'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?q=80&w=1600&auto=format&fit=crop',
-      bio: 'Exploring cutting-edge physics, quantum computing, and future science.'
-    },
+    title: 'Tears of Steel: Sci-Fi Live-Action VFX & Dynamic HLS Transcoding',
+    description: 'Exploring live-action 4K motion tracking, photorealistic robotic VFX integration, and sub-second chunked streaming delivery powered by Unified Streaming.',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1280&auto=format&fit=crop',
+    duration: 734,
+    durationFormatted: '12:14',
+    videoUrl: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8',
+    channel: AUTHENTIC_CHANNELS.vionex,
     viewsCount: '890,400',
     viewsNumeric: 890400,
-    likesCount: 12400,
+    likesCount: 42100,
     publishedAt: '1 week ago',
-    category: 'Science',
-    tags: ['Science', 'Quantum', 'Physics', 'Technology'],
+    category: 'Cloud Architecture',
+    tags: ['Cloud Architecture', 'HLS Streaming', 'VFX', 'WebRTC'],
     commentsCount: 940
   },
   {
     id: 'vid-demo-007',
-    title: 'Designing Resilient Distributed Databases: Raft, Paxos, and Vector Clocks',
-    description: 'How modern globally-distributed databases maintain strict consistency, handle partitions, and resolve conflicts at high concurrency.',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=1280&auto=format&fit=crop',
-    duration: 2120,
-    durationFormatted: '35:20',
-    videoUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
-    channel: {
-      handle: 'vionex-labs',
-      name: 'VIONEX Engineering',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop',
-      isVerified: true,
-      subscribers: '425K subscribers',
-      subscribersCount: 425000,
-      bannerUrl: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=1600&auto=format&fit=crop',
-      bio: 'Deep-dive software architecture, high throughput distributed systems, and modern video streaming engineering.'
-    },
-    viewsCount: '98,000',
-    viewsNumeric: 98000,
-    likesCount: 1680,
+    title: 'Cellular Kinetics & Plant Neurobiology: High-Speed Macro Time-Lapse',
+    description: 'Microscopic observations of stomata opening, hydraulic turgor pressure, and phototropic signaling in flowering plants at sub-millimeter scales.',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?q=80&w=1280&auto=format&fit=crop',
+    duration: 5,
+    durationFormatted: '0:05',
+    videoUrl: '/videos/short-1.mp4',
+    channel: AUTHENTIC_CHANNELS.lexfridman,
+    viewsCount: '980,000',
+    viewsNumeric: 980000,
+    likesCount: 51200,
     publishedAt: '2 weeks ago',
-    category: 'Coding',
-    tags: ['Databases', 'DistributedSystems', 'Raft', 'Backend'],
-    commentsCount: 112
+    category: 'Science',
+    tags: ['Science', 'Botany', 'Macro', 'Biology', 'LexFridman'],
+    commentsCount: 820
   },
   {
     id: 'vid-demo-008',
-    title: 'SpaceX Starship Orbital Refueling Demo & Mars Interplanetary Architecture',
-    description: 'Detailed technical analysis of cryo-propellant zero-g transfer, heat shield tiles refurbishment, and high-cadence launch architecture.',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1517976487502-5f69d300062a?q=80&w=1280&auto=format&fit=crop',
-    duration: 1650,
-    durationFormatted: '27:30',
-    videoUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
-    channel: {
-      handle: 'space-flight-now',
-      name: 'Orbital Dynamics',
-      avatarUrl: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?q=80&w=200&auto=format&fit=crop',
-      isVerified: true,
-      subscribers: '1.2M subscribers',
-      subscribersCount: 1200000,
-      bannerUrl: 'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?q=80&w=1600&auto=format&fit=crop',
-      bio: 'Aerospace engineering, space exploration, rocket telemetry.'
-    },
-    viewsCount: '1,420,000',
-    viewsNumeric: 1420000,
-    likesCount: 38200,
-    publishedAt: '6 days ago',
-    category: 'Science',
-    tags: ['Space', 'Aerospace', 'Starship', 'Rockets'],
-    commentsCount: 1840
+    title: 'synthwave radio - chill beats to relax / code / study to 24/7',
+    description: 'Continuous live broadcast featuring relaxing beats, synthwave melodies, and atmospheric ambient soundscapes for programmers, creators, and students worldwide.',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1280&auto=format&fit=crop',
+    duration: 0,
+    durationFormatted: 'LIVE',
+    videoUrl: 'https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8',
+    channel: AUTHENTIC_CHANNELS.lofigirl,
+    viewsCount: '14,420,000',
+    viewsNumeric: 14420000,
+    likesCount: 842000,
+    publishedAt: 'Started streaming 5 hours ago',
+    category: 'Music',
+    tags: ['Music', 'Lofi', 'LiveStream', 'Chill', 'Radio'],
+    commentsCount: 18500
   }
 ];
 
 export const INITIAL_SHORTS: ShortItem[] = [
   {
     id: 'short-001',
-    title: '5 Git tricks every Senior Developer uses daily ⚡',
-    channel: {
-      name: 'VIONEX Engineering',
-      handle: 'vionex-labs',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop',
-      isVerified: true
-    },
+    title: 'Real-Time Edge AI Vehicle Detection in 50 Seconds ⚡',
+    channel: AUTHENTIC_CHANNELS.fireship,
     likes: '48.2K',
     likesCount: 48200,
     comments: '1,240',
     shares: '8.4K',
-    videoUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
-    musicTitle: 'Lo-Fi Chill Beats - VIONEX Sounds',
-    tags: ['#coding', '#git', '#devtools', '#tips']
+    videoUrl: '/videos/short-2.mp4',
+    musicTitle: 'Fireship - 100 Seconds of Code Beat',
+    tags: ['#ai', '#coding', '#computervision', '#yolo']
   },
   {
     id: 'short-002',
-    title: 'Why HTTP/3 and QUIC change Web Streaming forever 🚀',
-    channel: {
-      name: 'Stream Engineering Lab',
-      handle: 'stream-engineering',
-      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop',
-      isVerified: true
-    },
+    title: 'Cinematic 4K Extreme Action Camera Breakdown 🚀',
+    channel: AUTHENTIC_CHANNELS.mkbhd,
     likes: '89.1K',
     likesCount: 89100,
     comments: '3,100',
     shares: '14.2K',
-    videoUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
-    musicTitle: 'Cyber Synth Pulse - Tokyo Neon',
-    tags: ['#networking', '#webdev', '#http3', '#tech']
+    videoUrl: '/videos/blue_moon.mp4',
+    musicTitle: 'MKBHD Studio Sound - Matte Black Theme',
+    tags: ['#tech', '#cameras', '#mkbhd', '#hdr']
   },
   {
     id: 'short-003',
-    title: 'Insane Ray Tracing physics demonstration in Unreal 5.5 🔥',
-    channel: {
-      name: 'Hardware Foundry',
-      handle: 'hardware-benchmark',
-      avatarUrl: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?q=80&w=200&auto=format&fit=crop',
-      isVerified: true
-    },
+    title: 'Deep Ocean Bioluminescence in Total Darkness 🌊',
+    channel: AUTHENTIC_CHANNELS.veritasium,
     likes: '142K',
     likesCount: 142000,
     comments: '4,520',
     shares: '22.8K',
-    videoUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
-    musicTitle: 'Epic Bass Drop - Game Audio Lab',
-    tags: ['#gaming', '#unrealengine', '#raytracing', '#fps']
+    videoUrl: '/videos/oceans.mp4',
+    musicTitle: 'Veritasium Ambient Physics Score',
+    tags: ['#science', '#ocean', '#physics', '#nature']
   },
   {
     id: 'short-004',
-    title: 'Analog Synthesizer patch build from scratch in 60s 🎹',
-    channel: {
-      name: 'Tokyo Synth Collective',
-      handle: 'synth-wave-collective',
-      avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=200&auto=format&fit=crop',
-      isVerified: true
-    },
+    title: 'Blender Cycles 4K Open Animation Breakdown 🔥',
+    channel: AUTHENTIC_CHANNELS.kurzgesagt,
     likes: '34.5K',
     likesCount: 34500,
     comments: '890',
     shares: '5.2K',
-    videoUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
-    musicTitle: 'Original Audio - Modular Synthesis',
-    tags: ['#musicproduction', '#modular', '#synth', '#creative']
+    videoUrl: '/videos/short-3.mp4',
+    musicTitle: 'Kurzgesagt Epic Orchestral Theme',
+    tags: ['#blender', '#cgi', '#animation', '#art']
   }
 ];
 
 export const INITIAL_LIVE_STREAMS: LiveStreamItem[] = [
   {
-    id: 'live-001',
-    title: '🔴 Coding VIONEX Live: Adding Peer-to-Peer WebRTC DataChannel Swarms',
-    channel: {
-      name: 'VIONEX Engineering',
-      handle: 'vionex-labs',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop',
-      isVerified: true
-    },
-    viewers: '14,280',
-    viewersNumeric: 14280,
-    category: 'Coding & Tech',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1280&auto=format&fit=crop',
-    streamUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
-    startedAt: 'Started 42 minutes ago',
+    id: 'live-stream-001',
+    title: 'synthwave radio - chill beats to relax / code / study to 24/7',
+    channel: AUTHENTIC_CHANNELS.lofigirl,
+    viewers: '28,450',
+    viewersNumeric: 28450,
+    category: 'Music',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1280&auto=format&fit=crop',
+    streamUrl: 'https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8',
+    startedAt: 'Live 24/7',
     chatMessages: [
-      { id: 'c1', author: 'CodeNinja', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop', message: 'The WebRTC fallback circuit breaker is brilliant! 🚀', timestamp: '17:02' },
-      { id: 'c2', author: 'FrontendDev_99', avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?q=80&w=100&auto=format&fit=crop', message: 'What is the buffer threshold before falling back to CDN origin?', timestamp: '17:03' },
-      { id: 'c3', author: 'Alex_Streams', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=100&auto=format&fit=crop', message: 'Sent a $20 Super Chat! Love the architecture breakdown!', timestamp: '17:04', isSuperChat: true, amount: '$20.00' },
-      { id: 'c4', author: 'Elena_V', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=100&auto=format&fit=crop', message: 'Audio quality is so crisp today.', timestamp: '17:05' }
+      { id: 'cm1', author: 'CodeNinja', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop', message: 'Best lofi beats for late night debugging sessions! 🔥', timestamp: '17:00' },
+      { id: 'cm2', author: 'DevLead', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=100&auto=format&fit=crop', message: 'Streaming at 1080p 60fps with zero buffering.', timestamp: '17:01' }
     ]
   },
   {
-    id: 'live-002',
-    title: '🔴 Grand Finals: Global Esports Championship 2026',
-    channel: {
-      name: 'Cyber Arena Pro',
-      handle: 'cyber-arena',
-      avatarUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=200&auto=format&fit=crop',
-      isVerified: true
-    },
-    viewers: '85,400',
-    viewersNumeric: 85400,
-    category: 'Gaming',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=1280&auto=format&fit=crop',
-    streamUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
-    startedAt: 'Started 1 hour ago',
+    id: 'live-stream-002',
+    title: 'VIONEX Platform Live Keynote: Distributed WebRTC & Cloud Transcoding',
+    channel: AUTHENTIC_CHANNELS.vionex,
+    viewers: '14,200',
+    viewersNumeric: 14200,
+    category: 'Cloud Architecture',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1280&auto=format&fit=crop',
+    streamUrl: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8',
+    startedAt: 'Live now',
     chatMessages: [
-      { id: 'cg1', author: 'PixelKing', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=100&auto=format&fit=crop', message: 'WHAT A FLICK SHOT! Unbelievable precision!', timestamp: '17:10' },
-      { id: 'cg2', author: 'Nova_Gamer', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=100&auto=format&fit=crop', message: 'Gg to both teams, amazing set.', timestamp: '17:12' }
+      { id: 'cm3', author: 'CloudArchitect', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=100&auto=format&fit=crop', message: 'Live WebRTC data mesh telemetry looks fantastic!', timestamp: '17:02' }
     ]
   }
 ];
 
 export const INITIAL_PLAYLISTS: PlaylistItem[] = [
   {
-    id: 'pl-001',
-    title: 'Modern Distributed Systems & Media Architectures',
-    description: 'Curated architectural tutorials on video pipelines, HLS transcoding, WebRTC peer swarming, and scalable databases.',
+    id: 'pl-tech-picks',
+    title: 'Modern Architecture & Video Systems',
+    description: 'Curated technical walkthroughs on streaming, high-throughput pipelines, and distributed nodes.',
     videoCount: 4,
-    thumbnailUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1280&auto=format&fit=crop',
-    updatedAt: 'Updated yesterday',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop',
+    updatedAt: 'Updated today',
     isPrivate: false,
-    videos: ['vid-demo-001', 'vid-demo-002', 'vid-demo-003', 'vid-demo-007']
+    videos: ['vid-demo-001', 'vid-demo-002', 'vid-demo-003', 'vid-demo-005']
   },
   {
-    id: 'pl-002',
-    title: 'Frontend Masterclass & Canvas Shaders',
-    description: 'Deep dive into performant web styling, custom media controls, and GPU canvas effects.',
-    videoCount: 2,
-    thumbnailUrl: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?q=80&w=1280&auto=format&fit=crop',
-    updatedAt: 'Updated 3 days ago',
+    id: 'pl-science-physics',
+    title: 'Science, Quantum & Space Exploration',
+    description: 'Frontier physics, quantum error correction, and celestial engineering masterclasses.',
+    videoCount: 3,
+    thumbnailUrl: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=600&auto=format&fit=crop',
+    updatedAt: 'Updated 2 days ago',
     isPrivate: false,
-    videos: ['vid-demo-004', 'vid-demo-001']
+    videos: ['vid-demo-004', 'vid-demo-007', 'vid-demo-008']
   }
 ];
 
 export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
   {
     id: 'notif-1',
-    title: 'New Video from VIONEX Engineering',
-    desc: 'Deep Dive: WebRTC P2P Mesh with HLS Adaptive Bitrate is now streaming.',
-    time: '10m ago',
+    title: 'Fireship uploaded a new video',
+    desc: 'Real-Time Edge AI & Object Detection with YOLOv10 in 100 Seconds',
+    time: '2h ago',
     unread: true,
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop',
-    videoId: 'vid-demo-001'
+    avatar: 'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?q=80&w=200&auto=format&fit=crop',
+    videoId: 'vid-demo-003'
   },
   {
     id: 'notif-2',
-    title: 'Comment Hearted',
-    desc: 'Stream Engineering Lab gave your comment on HLS GOP Alignment a heart!',
-    time: '1h ago',
+    title: 'Marques Brownlee published a review',
+    desc: 'View From A Blue Moon: 4K Cinematic Action Camera Breakdown',
+    time: '4h ago',
     unread: true,
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop'
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop',
+    videoId: 'vid-demo-002'
   },
   {
     id: 'notif-3',
     title: 'Studio Milestone Reached',
-    desc: 'Your channel surpassed 425,000 subscribers! View real-time analytics.',
+    desc: 'Your channel surpassed 540,000 subscribers! View real-time analytics.',
     time: '5h ago',
     unread: false,
     avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200&auto=format&fit=crop'
@@ -487,7 +466,20 @@ export function getStoredVideos(): VideoItem[] {
     const raw = localStorage.getItem('vionex_custom_videos');
     if (raw) {
       const custom: VideoItem[] = JSON.parse(raw);
-      return [...custom, ...INITIAL_VIDEOS];
+      // Clean out mock items like "ghn" or items with missing/fake videoUrls
+      const validCustom = custom.filter(v =>
+        v &&
+        v.title &&
+        v.title.toLowerCase() !== 'ghn' &&
+        !v.title.toLowerCase().includes('mock') &&
+        v.videoUrl &&
+        v.duration > 0
+      );
+      // Clean up localStorage if invalid items were purged
+      if (validCustom.length !== custom.length) {
+        localStorage.setItem('vionex_custom_videos', JSON.stringify(validCustom));
+      }
+      return [...validCustom, ...INITIAL_VIDEOS];
     }
   } catch {}
   return INITIAL_VIDEOS;
@@ -722,12 +714,12 @@ export function deletePlaylist(playlistId: string): boolean {
 }
 
 export function getSubscriptions(): string[] {
-  if (IS_SERVER) return ['vionex-labs', 'stream-engineering'];
+  if (IS_SERVER) return ['mkbhd', 'fireship', 'veritasium', 'vionex'];
   try {
     const raw = localStorage.getItem('vionex_subscriptions');
     if (raw) return JSON.parse(raw);
   } catch {}
-  return ['vionex-labs', 'stream-engineering'];
+  return ['mkbhd', 'fireship', 'veritasium', 'vionex'];
 }
 
 export function toggleSubscription(channelHandle: string): boolean {
@@ -771,12 +763,12 @@ export function markAllNotificationsRead() {
 }
 
 export function getRecentSearches(): string[] {
-  if (IS_SERVER) return ['HLS adaptive streaming', 'Next.js 15 Fastify', 'Two-Tower DNN', 'WebRTC Datachannels'];
+  if (IS_SERVER) return ['HLS adaptive streaming', 'Next.js 15 Fastify', 'Two-Tower DNN', 'WebRTC Datachannels', 'MKBHD camera review', 'Fireship 100 seconds'];
   try {
     const raw = localStorage.getItem('vionex_recent_searches');
     if (raw) return JSON.parse(raw);
   } catch {}
-  return ['HLS adaptive streaming', 'Next.js 15 Fastify', 'Two-Tower DNN', 'WebRTC Datachannels'];
+  return ['HLS adaptive streaming', 'Next.js 15 Fastify', 'Two-Tower DNN', 'WebRTC Datachannels', 'MKBHD camera review', 'Fireship 100 seconds'];
 }
 
 export function addRecentSearch(query: string) {
@@ -820,4 +812,3 @@ export function formatCompactNumber(num: number | string | null | undefined): st
   }
   return n.toString();
 }
-

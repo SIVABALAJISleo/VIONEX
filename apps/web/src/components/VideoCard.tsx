@@ -81,6 +81,8 @@ export default function VideoCard({
     );
   }
 
+  const isLive = duration === 0 || (publishedAt && publishedAt.toLowerCase().includes('streaming'));
+
   return (
     <div className="group flex flex-col gap-3 relative select-none">
       {/* Thumbnail Container */}
@@ -96,11 +98,16 @@ export default function VideoCard({
               : 'linear-gradient(135deg, #E5E5E5 0%, #CCCCCC 100%)'
           }}
         />
-        {duration > 0 && (
+        {duration > 0 ? (
           <span className="absolute bottom-1.5 right-1.5 px-1 py-0.5 rounded bg-black/85 text-[11px] font-medium text-white tracking-tight">
             {formatDuration(duration)}
           </span>
-        )}
+        ) : isLive ? (
+          <span className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded bg-red-600 text-[10px] font-bold text-white tracking-wider flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+            LIVE
+          </span>
+        ) : null}
       </Link>
 
       {/* Meta Details */}
@@ -141,27 +148,31 @@ export default function VideoCard({
               e.stopPropagation();
               setShowMenu(!showMenu);
             }}
-            className="opacity-0 group-hover:opacity-100 p-1.5 rounded-full hover:bg-[#F2F2F2] text-[#0F0F0F] transition-opacity"
-            aria-label="Action menu"
+            className="p-1 rounded-full text-[#606060] hover:text-[#0F0F0F] hover:bg-[#F2F2F2] opacity-0 group-hover:opacity-100 transition-opacity"
+            title="Action menu"
           >
-            <MoreVertical className="w-4 h-4 text-[#0F0F0F]" />
+            <MoreVertical className="w-4 h-4" />
           </button>
 
+          {/* Action Menu Dropdown */}
           {showMenu && (
-            <div className="absolute right-0 top-8 w-48 bg-white border border-[#E5E5E5] rounded-xl shadow-xl py-1 z-30 text-xs text-[#0F0F0F]">
+            <div
+              className="absolute right-0 top-8 z-30 w-48 bg-white border border-[#E5E5E5] rounded-xl shadow-lg py-1 text-xs text-[#0F0F0F]"
+              onClick={(e) => e.stopPropagation()}
+            >
               <button
                 onClick={handleToggleWatchLater}
-                className="w-full flex items-center gap-3 px-3 py-2 hover:bg-[#F2F2F2] transition-colors"
+                className="w-full px-4 py-2 flex items-center gap-3 hover:bg-[#F2F2F2] transition-colors"
               >
                 <Clock className="w-4 h-4 text-[#606060]" />
                 <span>{inWatchLater ? 'Remove from Watch Later' : 'Save to Watch Later'}</span>
               </button>
               <button
                 onClick={handleShare}
-                className="w-full flex items-center gap-3 px-3 py-2 hover:bg-[#F2F2F2] transition-colors"
+                className="w-full px-4 py-2 flex items-center gap-3 hover:bg-[#F2F2F2] transition-colors"
               >
-                <Share2 className="w-4 h-4 text-[#606060]" />
-                <span>{copied ? 'Link copied!' : 'Share'}</span>
+                {copied ? <Check className="w-4 h-4 text-green-600" /> : <Share2 className="w-4 h-4 text-[#606060]" />}
+                <span>{copied ? 'Link Copied!' : 'Share Video'}</span>
               </button>
               <button
                 onClick={(e) => {
@@ -170,10 +181,10 @@ export default function VideoCard({
                   setIsHidden(true);
                   setShowMenu(false);
                 }}
-                className="w-full flex items-center gap-3 px-3 py-2 hover:bg-[#F2F2F2] transition-colors text-[#606060]"
+                className="w-full px-4 py-2 flex items-center gap-3 hover:bg-[#F2F2F2] text-red-600 transition-colors"
               >
-                <EyeOff className="w-4 h-4 text-[#606060]" />
-                <span>Not interested</span>
+                <EyeOff className="w-4 h-4" />
+                <span>Hide Video</span>
               </button>
             </div>
           )}

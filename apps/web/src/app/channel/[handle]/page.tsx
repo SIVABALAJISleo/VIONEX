@@ -4,27 +4,41 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2, Bell, Share2, Play, ThumbsUp, MessageSquare, BarChart2 } from 'lucide-react';
-import { INITIAL_VIDEOS, INITIAL_SHORTS, getSubscriptions, toggleSubscription, formatNumber } from '@/lib/data';
+import {
+  INITIAL_VIDEOS,
+  INITIAL_SHORTS,
+  AUTHENTIC_CHANNELS,
+  getSubscriptions,
+  toggleSubscription,
+  formatNumber
+} from '@/lib/data';
 import { INITIAL_COMMUNITY_POSTS, voteOnCommunityPoll, CommunityPost } from '@/lib/community';
 
 export default function ChannelPage() {
   const params = useParams();
-  const handle = (params?.handle as string) || 'vionex-labs';
+  const rawHandle = (params?.handle as string) || 'mkbhd';
+  const handle = rawHandle.toLowerCase();
+
   const [activeTab, setActiveTab] = useState<'videos' | 'shorts' | 'community' | 'about'>('videos');
   const [isSubscribed, setIsSubscribed] = useState(false);
-  const [subCount, setSubCount] = useState(425000);
   const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>(INITIAL_COMMUNITY_POSTS);
 
-  // Find channel from videos or fallback to default
-  const channelVideos = INITIAL_VIDEOS.filter((v) => v.channel.handle === handle || handle === 'vionex-labs');
-  const videosToDisplay = channelVideos.length > 0 ? channelVideos : INITIAL_VIDEOS.slice(0, 4);
+  // Match authentic channel
+  const channel = AUTHENTIC_CHANNELS[handle] ||
+    INITIAL_VIDEOS.find(v => v.channel.handle.toLowerCase() === handle)?.channel ||
+    AUTHENTIC_CHANNELS.mkbhd;
+
+  const [subCount, setSubCount] = useState(channel.subscribersCount || 1000000);
+
+  // Find all videos published by this creator
+  const channelVideos = INITIAL_VIDEOS.filter((v) => v.channel.handle.toLowerCase() === channel.handle.toLowerCase());
+  const videosToDisplay = channelVideos.length > 0 ? channelVideos : INITIAL_VIDEOS.slice(0, 3);
   const primaryVideo = videosToDisplay[0];
-  const channel = primaryVideo?.channel || INITIAL_VIDEOS[0].channel;
 
   useEffect(() => {
     const subs = getSubscriptions();
     setIsSubscribed(subs.includes(channel.handle));
-    setSubCount(channel.subscribersCount || 425000);
+    setSubCount(channel.subscribersCount || 1000000);
   }, [channel.handle, channel.subscribersCount]);
 
   const handleSubToggle = () => {
@@ -62,13 +76,13 @@ export default function ChannelPage() {
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl sm:text-3xl font-bold text-[#0F0F0F]">{channel.name}</h1>
-                {channel.isVerified && <CheckCircle2 className="w-5 h-5 text-[#606060]" />}
+                {channel.isVerified && <CheckCircle2 className="w-5 h-5 text-blue-600 fill-blue-600/10" />}
               </div>
               <p className="text-xs text-[#606060]" suppressHydrationWarning>
                 @{channel.handle} • {formatNumber(subCount)} subscribers • {videosToDisplay.length} videos
               </p>
               <p className="text-xs text-[#606060] max-w-xl line-clamp-2 pt-1">
-                {channel.bio || 'Original high-performance video streaming engineering and decentralized media architecture.'}
+                {channel.bio || 'Official verified channel with genuine original media and videos.'}
               </p>
             </div>
           </div>
@@ -86,7 +100,15 @@ export default function ChannelPage() {
               {isSubscribed ? <Bell className="w-4 h-4 fill-[#0F0F0F]" /> : null}
               <span>{isSubscribed ? 'Subscribed' : 'Subscribe'}</span>
             </button>
-            <button className="p-2.5 rounded-full bg-[#F2F2F2] hover:bg-[#E5E5E5] text-[#0F0F0F] transition-colors" title="Share Channel">
+            <button
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  navigator.clipboard.writeText(window.location.href);
+                }
+              }}
+              className="p-2.5 rounded-full bg-[#F2F2F2] hover:bg-[#E5E5E5] text-[#0F0F0F] transition-colors"
+              title="Share Channel"
+            >
               <Share2 className="w-4 h-4" />
             </button>
           </div>
@@ -117,7 +139,7 @@ export default function ChannelPage() {
               <div className="p-4 rounded-2xl bg-[#F9F9F9] border border-[#E5E5E5] flex flex-col md:flex-row gap-6 items-center">
                 <Link
                   href={`/watch/${primaryVideo.id}`}
-                  className="w-full md:w-96 aspect-video rounded-xl overflow-hidden bg-black relative group shrink-0"
+                  className="w-full md:w-96 aspect-video rounded-xl overflow-hidden bg-black relative group shrink-0 shadow-sm"
                 >
                   <img
                     src={primaryVideo.thumbnailUrl}
@@ -129,6 +151,9 @@ export default function ChannelPage() {
                       <Play className="w-5 h-5 fill-white ml-0.5" />
                     </div>
                   </div>
+                  <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/80 text-[10px] font-mono text-white">
+                    {primaryVideo.durationFormatted}
+                  </span>
                 </Link>
                 <div className="space-y-2 flex-1 min-w-0">
                   <span className="px-2.5 py-0.5 rounded-full bg-[#E5E5E5] text-[#0F0F0F] text-[11px] font-semibold">
@@ -185,8 +210,8 @@ export default function ChannelPage() {
             {INITIAL_SHORTS.map((short) => (
               <Link
                 key={short.id}
-                href="/shorts"
-                className="group relative aspect-9/16 rounded-xl overflow-hidden bg-zinc-900 border border-[#E5E5E5]"
+                href={`/shorts?id=${short.id}`}
+                className="group relative aspect-[9/16] rounded-xl overflow-hidden bg-zinc-900 border border-[#E5E5E5]"
               >
                 <div className="w-full h-full bg-gradient-to-t from-black via-zinc-900 to-zinc-800 p-4 flex flex-col justify-end group-hover:scale-105 transition-transform">
                   <h4 className="font-bold text-xs text-white line-clamp-2 leading-snug">
@@ -199,94 +224,52 @@ export default function ChannelPage() {
           </div>
         )}
 
-        {/* Tab Content: Community (SOC-039) */}
+        {/* Tab Content: Community */}
         {activeTab === 'community' && (
-          <div className="max-w-2xl mx-auto space-y-6">
+          <div className="max-w-2xl space-y-6">
             {communityPosts.map((post) => (
-              <div key={post.id} className="p-5 rounded-2xl border border-[#E5E5E5] bg-white shadow-sm space-y-4">
+              <div key={post.id} className="p-4 rounded-xl border border-[#E5E5E5] space-y-3 bg-white shadow-sm">
                 <div className="flex items-center gap-3">
-                  <img
-                    src={post.authorAvatar}
-                    alt={post.authorName}
-                    className="w-10 h-10 rounded-full object-cover border border-[#E5E5E5]"
-                  />
+                  <img src={post.author.avatarUrl} alt={post.author.name} className="w-9 h-9 rounded-full object-cover" />
                   <div>
-                    <h4 className="font-semibold text-sm text-[#0F0F0F]">{post.authorName}</h4>
-                    <span className="text-xs text-[#606060]">{post.publishedAt}</span>
+                    <h4 className="text-xs font-bold text-[#0F0F0F]">{post.author.name}</h4>
+                    <span className="text-[10px] text-[#606060]">{post.publishedAt}</span>
                   </div>
                 </div>
 
-                <p className="text-sm text-[#0F0F0F] leading-relaxed whitespace-pre-line">
-                  {post.content}
-                </p>
+                <p className="text-xs text-[#0F0F0F] leading-relaxed whitespace-pre-line">{post.content}</p>
 
-                {/* Optional Image */}
-                {post.imageUrl && (
-                  <div className="rounded-xl overflow-hidden border border-[#E5E5E5] aspect-video">
-                    <img src={post.imageUrl} alt="Community update" className="w-full h-full object-cover" />
+                {post.type === 'poll' && post.pollOptions && (
+                  <div className="space-y-2 pt-1">
+                    {post.pollOptions.map((opt) => {
+                      const totalVotes = post.pollTotalVotes || 1;
+                      const percentage = Math.round((opt.votes / totalVotes) * 100);
+                      return (
+                        <button
+                          key={opt.id}
+                          onClick={() => handlePollVote(post.id, opt.id)}
+                          className={`w-full p-2.5 rounded-lg border text-left text-xs font-medium flex items-center justify-between transition-all ${
+                            opt.isUserVote
+                              ? 'border-[#065FD4] bg-[#F2F8FF] text-[#065FD4]'
+                              : 'border-[#E5E5E5] hover:bg-[#F9F9F9] text-[#0F0F0F]'
+                          }`}
+                        >
+                          <span>{opt.text}</span>
+                          <span className="font-semibold text-[11px] text-[#606060]">{percentage}%</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
 
-                {/* Interactive Poll */}
-                {post.poll && (
-                  <div className="p-4 rounded-xl bg-[#F9F9F9] border border-[#E5E5E5] space-y-3">
-                    <div className="flex items-center justify-between text-xs text-[#606060]">
-                      <span className="font-semibold flex items-center gap-1.5">
-                        <BarChart2 className="w-4 h-4 text-[#FF0000]" />
-                        Community Poll
-                      </span>
-                      <span suppressHydrationWarning>{formatNumber(post.poll.totalVotes)} votes</span>
-                    </div>
-
-                    <div className="space-y-2">
-                      {post.poll.options.map((opt) => {
-                        const isVoted = post.poll?.userVotedOptionId === opt.id;
-                        const pct = post.poll && post.poll.totalVotes > 0
-                          ? Math.round((opt.votes / post.poll.totalVotes) * 100)
-                          : 0;
-
-                        return (
-                          <button
-                            key={opt.id}
-                            onClick={() => handlePollVote(post.id, opt.id)}
-                            className={`w-full text-left relative overflow-hidden rounded-xl border p-3 text-xs transition-all ${
-                              isVoted
-                                ? 'border-[#0F0F0F] bg-zinc-50 font-semibold'
-                                : 'border-[#CCCCCC] hover:border-[#606060] bg-white'
-                            }`}
-                          >
-                            {/* Vote percentage bar fill */}
-                            {post.poll?.userVotedOptionId && (
-                              <div
-                                className={`absolute inset-y-0 left-0 transition-all duration-500 ${
-                                  isVoted ? 'bg-red-100/70' : 'bg-zinc-100'
-                                }`}
-                                style={{ width: `${pct}%` }}
-                              />
-                            )}
-
-                            <div className="relative z-10 flex items-center justify-between">
-                              <span className="text-[#0F0F0F]">{opt.text}</span>
-                              {post.poll?.userVotedOptionId && (
-                                <span className="font-mono font-bold text-[#0F0F0F]">{pct}%</span>
-                              )}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Social engagement buttons */}
-                <div className="flex items-center gap-6 pt-2 border-t border-[#F2F2F2] text-xs text-[#606060]">
-                  <button className="flex items-center gap-1.5 hover:text-[#0F0F0F] transition-colors">
+                <div className="flex items-center gap-4 pt-2 border-t border-[#F2F2F2] text-xs text-[#606060]">
+                  <button className="flex items-center gap-1.5 hover:text-[#0F0F0F]">
                     <ThumbsUp className="w-4 h-4" />
-                    <span suppressHydrationWarning>{formatNumber(post.likes)}</span>
+                    <span>{post.likesCount}</span>
                   </button>
-                  <button className="flex items-center gap-1.5 hover:text-[#0F0F0F] transition-colors">
+                  <button className="flex items-center gap-1.5 hover:text-[#0F0F0F]">
                     <MessageSquare className="w-4 h-4" />
-                    <span>{post.commentsCount} Comments</span>
+                    <span>{post.commentsCount}</span>
                   </button>
                 </div>
               </div>
@@ -296,15 +279,14 @@ export default function ChannelPage() {
 
         {/* Tab Content: About */}
         {activeTab === 'about' && (
-          <div className="bg-[#F9F9F9] border border-[#E5E5E5] rounded-2xl p-6 max-w-2xl space-y-4">
-            <h3 className="font-bold text-base text-[#0F0F0F]">Channel Details</h3>
-            <p className="text-sm text-[#606060] leading-relaxed">
-              {channel.bio || 'VIONEX official certified creator channel.'}
-            </p>
-            <div className="border-t border-[#E5E5E5] pt-4 space-y-2 text-xs text-[#606060]">
-              <div>Joined: October 2026</div>
-              <div>Total Channel Views: 1,842,500 views</div>
-              <div>Country: Global / Decentralized</div>
+          <div className="max-w-2xl space-y-4 text-xs text-[#606060] leading-relaxed">
+            <h3 className="text-sm font-bold text-[#0F0F0F]">Description</h3>
+            <p>{channel.bio || 'Official verified YouTube-grade channel on VIONEX.'}</p>
+            <div className="pt-4 border-t border-[#E5E5E5] space-y-2">
+              <h3 className="text-sm font-bold text-[#0F0F0F]">Stats</h3>
+              <p>Joined Oct 2024</p>
+              <p>{formatNumber(subCount)} subscribers</p>
+              <p>28,450,120 total video views</p>
             </div>
           </div>
         )}
