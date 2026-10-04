@@ -6,7 +6,7 @@ export async function socialRoutes(app: FastifyInstance) {
   // 1. Subscribe to channel (Authenticated & Transactional)
   app.post('/channels/:channelId/subscribe', { preHandler: [authenticate] }, async (request, reply) => {
     const { channelId } = request.params as { channelId: string };
-    const userId = (request as any).user.id;
+    const userId = (request as any).user.userId || (request as any).user.id;
 
     const channel = await prisma.channel.findUnique({ where: { id: channelId } });
     if (!channel) {
@@ -42,7 +42,7 @@ export async function socialRoutes(app: FastifyInstance) {
   // 2. Unsubscribe from channel (Authenticated & Transactional)
   app.post('/channels/:channelId/unsubscribe', { preHandler: [authenticate] }, async (request, reply) => {
     const { channelId } = request.params as { channelId: string };
-    const userId = (request as any).user.id;
+    const userId = (request as any).user.userId || (request as any).user.id;
 
     const result = await prisma.$transaction(async (tx) => {
       const existing = await tx.subscription.findUnique({
@@ -72,7 +72,7 @@ export async function socialRoutes(app: FastifyInstance) {
   // 3. Like a video (Authenticated & Transactional)
   app.post('/videos/:videoId/like', { preHandler: [authenticate] }, async (request, reply) => {
     const { videoId } = request.params as { videoId: string };
-    const userId = (request as any).user.id;
+    const userId = (request as any).user.userId || (request as any).user.id;
 
     const video = await prisma.video.findUnique({ where: { id: videoId } });
     if (!video) {
@@ -125,7 +125,7 @@ export async function socialRoutes(app: FastifyInstance) {
   // 4. Remove reaction / Unlike (Authenticated & Transactional)
   app.post('/videos/:videoId/unlike', { preHandler: [authenticate] }, async (request, reply) => {
     const { videoId } = request.params as { videoId: string };
-    const userId = (request as any).user.id;
+    const userId = (request as any).user.userId || (request as any).user.id;
 
     const result = await prisma.$transaction(async (tx) => {
       const existing = await tx.videoReaction.findUnique({
@@ -159,7 +159,6 @@ export async function socialRoutes(app: FastifyInstance) {
   // 5. Query user interaction status for a video
   app.get('/videos/:videoId/status', async (request, reply) => {
     const { videoId } = request.params as { videoId: string };
-    // Optional auth
     let userId: string | null = null;
     try {
       const authHeader = request.headers.authorization;
@@ -186,7 +185,7 @@ export async function socialRoutes(app: FastifyInstance) {
     });
   });
 
-  // Backward compatibility aliases
+  // Aliases
   app.post('/subscribe/:channelId', { preHandler: [authenticate] }, async (req, rep) => {
     return (app as any).inject({
       method: 'POST',

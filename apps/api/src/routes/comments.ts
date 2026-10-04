@@ -33,7 +33,7 @@ export async function commentRoutes(app: FastifyInstance) {
     }
 
     const { videoId, parentId, content } = parse.data;
-    const userId = (request as any).user.id;
+    const userId = (request as any).user.userId || (request as any).user.id;
 
     const video = await prisma.video.findUnique({ where: { id: videoId } });
     if (!video) {
@@ -68,13 +68,14 @@ export async function commentRoutes(app: FastifyInstance) {
   app.delete('/:commentId', { preHandler: [authenticate] }, async (request, reply) => {
     const { commentId } = request.params as { commentId: string };
     const user = (request as any).user;
+    const userId = user.userId || user.id;
 
     const comment = await prisma.comment.findUnique({ where: { id: commentId } });
     if (!comment) {
       return reply.status(404).send({ success: false, code: 'NOT_FOUND', message: 'Comment not found' });
     }
 
-    if (comment.userId !== user.id && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
+    if (comment.userId !== userId && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
       return reply.status(403).send({ success: false, code: 'FORBIDDEN', message: 'Not authorized to delete this comment' });
     }
 
