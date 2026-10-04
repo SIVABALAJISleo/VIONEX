@@ -15,6 +15,7 @@ import { analyticsRoutes } from './routes/analytics';
 import { liveRoutes } from './routes/live';
 import { copyrightRoutes } from './routes/copyright';
 import { paymentRoutes } from './routes/payments';
+import { communicationRoutes } from './routes/communication';
 
 const fastify = Fastify({
   logger: process.env.NODE_ENV !== 'production'
@@ -63,6 +64,7 @@ async function bootstrap() {
   fastify.register(liveRoutes, { prefix: '/api/v1/live' });
   fastify.register(copyrightRoutes, { prefix: '/api/v1/copyright' });
   fastify.register(paymentRoutes, { prefix: '/api/v1/payments' });
+  fastify.register(communicationRoutes, { prefix: '/api/v1/communication' });
 
   // Global Error Handler
   fastify.setErrorHandler((error, request, reply) => {
