@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import VideoCard from '@/components/VideoCard';
-import { getStoredVideos, INITIAL_SHORTS, VideoItem } from '@/lib/data';
+import { getStoredVideos, INITIAL_VIDEOS, INITIAL_SHORTS, VideoItem } from '@/lib/data';
 import { Film } from 'lucide-react';
 
 const CATEGORIES = [
@@ -19,7 +19,7 @@ const CATEGORIES = [
 
 export default function HomePage() {
   const [activeCategory, setActiveCategory] = useState('All');
-  const [videos, setVideos] = useState<VideoItem[]>([]);
+  const [videos, setVideos] = useState<VideoItem[]>(INITIAL_VIDEOS);
 
   useEffect(() => {
     setVideos(getStoredVideos());
