@@ -29,6 +29,11 @@ import { AUTHENTIC_CHANNELS } from '@/lib/data';
 export default function Sidebar() {
   const pathname = usePathname();
 
+  // On full-bleed WhatsApp messaging interface, yield 100% of the viewport to WhatsApp Web
+  if (pathname?.startsWith('/messages')) {
+    return null;
+  }
+
   const mainLinks = [
     { label: 'Home', href: '/', icon: Home },
     { label: 'Shorts', href: '/shorts', icon: Film },
