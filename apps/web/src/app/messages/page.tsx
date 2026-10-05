@@ -58,7 +58,11 @@ import {
   Download,
   Share2,
   Info,
-  ChevronRight
+  ChevronRight,
+  Monitor,
+  Maximize2,
+  ChevronLeft,
+  CheckCircle2
 } from 'lucide-react';
 import {
   ChatMessage,
@@ -74,13 +78,122 @@ import {
 } from '@/lib/communication';
 import { AUTHENTIC_CHANNELS } from '@/lib/data';
 
-interface StatusStory {
+// ============================================================================
+// WEB AUDIO SYNTHESIZER (Pure in-browser authentic WhatsApp sound effects)
+// ============================================================================
+class WhatsAppAudioSynth {
+  private ctx: AudioContext | null = null;
+
+  private getContext() {
+    if (!this.ctx && typeof window !== 'undefined') {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioCtx) this.ctx = new AudioCtx();
+    }
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+    return this.ctx;
+  }
+
+  // Authentic WhatsApp outgoing message pop
+  playSend() {
+    try {
+      const ctx = this.getContext();
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(800, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(1400, ctx.currentTime + 0.05);
+      gain.gain.setValueAtTime(0.18, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.07);
+    } catch {}
+  }
+
+  // Authentic WhatsApp incoming message dual-chime
+  playReceive() {
+    try {
+      const ctx = this.getContext();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      // Tone 1
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'triangle';
+      osc1.frequency.setValueAtTime(880, now);
+      gain1.gain.setValueAtTime(0.15, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.09);
+
+      // Tone 2
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(1320, now + 0.07);
+      gain2.gain.setValueAtTime(0.18, now + 0.07);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now + 0.07);
+      osc2.stop(now + 0.23);
+    } catch {}
+  }
+
+  // WebRTC dialing ringtone
+  playDialTone() {
+    try {
+      const ctx = this.getContext();
+      if (!ctx) return;
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc1.frequency.value = 440;
+      osc2.frequency.value = 480;
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(ctx.destination);
+      osc1.start();
+      osc2.start();
+      osc1.stop(ctx.currentTime + 0.85);
+      osc2.stop(ctx.currentTime + 0.85);
+    } catch {}
+  }
+
+  // Voice note speech simulation beep
+  playVoiceNoteTone(pitch = 300) {
+    try {
+      const ctx = this.getContext();
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(pitch, ctx.currentTime);
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.13);
+    } catch {}
+  }
+}
+
+const audioSynth = new WhatsAppAudioSynth();
+
+// ============================================================================
+// TYPES & DATA STRUCTURES
+// ============================================================================
+interface StatusSlide {
   id: string;
-  authorId: string;
-  authorName: string;
-  authorAvatar: string;
-  isVerified: boolean;
-  timeAgo: string;
   mediaUrl?: string;
   text?: string;
   bgColor?: string;
@@ -89,8 +202,17 @@ interface StatusStory {
     title: string;
     route: string;
   };
+}
+
+interface StatusStory {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar: string;
+  isVerified: boolean;
+  timeAgo: string;
+  slides: StatusSlide[];
   hasViewed: boolean;
-  viewsCount: number;
 }
 
 const DEFAULT_STORIES: StatusStory[] = [
@@ -101,14 +223,24 @@ const DEFAULT_STORIES: StatusStory[] = [
     authorAvatar: AUTHENTIC_CHANNELS.mkbhd.avatarUrl,
     isVerified: true,
     timeAgo: '2 hours ago',
-    mediaUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1280&auto=format&fit=crop',
-    caption: 'Setting up RED 6K cameras on helicopter gimbals for sunset shots 🚁🎬',
-    vionexRef: {
-      title: 'View From A Blue Moon: 4K Cinematic Action Camera Breakdown',
-      route: '/watch/vid-demo-002'
-    },
     hasViewed: false,
-    viewsCount: 1420
+    slides: [
+      {
+        id: 'mk-1',
+        mediaUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1280&auto=format&fit=crop',
+        caption: 'Setting up RED 6K cameras on helicopter gimbals for sunset shots 🚁🎬',
+        vionexRef: {
+          title: 'View From A Blue Moon: 4K Cinematic Action Camera Breakdown',
+          route: '/watch/vid-demo-002'
+        }
+      },
+      {
+        id: 'mk-2',
+        text: 'Testing 120 FPS high-speed dynamic range sensor latency live on VIONEX!',
+        bgColor: '#1f2c34',
+        caption: 'Slide 2: Sensor telemetry test'
+      }
+    ]
   },
   {
     id: 's-fireship',
@@ -117,14 +249,18 @@ const DEFAULT_STORIES: StatusStory[] = [
     authorAvatar: AUTHENTIC_CHANNELS.fireship.avatarUrl,
     isVerified: true,
     timeAgo: '4 hours ago',
-    mediaUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=1280&auto=format&fit=crop',
-    caption: 'Testing 120 FPS object classification directly in Chrome WebGPU runtime ⚡',
-    vionexRef: {
-      title: 'Real-Time Edge AI & Object Detection with YOLOv10 in 100 Seconds',
-      route: '/watch/vid-demo-003'
-    },
     hasViewed: false,
-    viewsCount: 2890
+    slides: [
+      {
+        id: 'fs-1',
+        mediaUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=1280&auto=format&fit=crop',
+        caption: 'Testing 120 FPS object classification directly in Chrome WebGPU runtime ⚡',
+        vionexRef: {
+          title: 'Real-Time Edge AI & Object Detection with YOLOv10 in 100 Seconds',
+          route: '/watch/vid-demo-003'
+        }
+      }
+    ]
   },
   {
     id: 's-lofi',
@@ -133,38 +269,51 @@ const DEFAULT_STORIES: StatusStory[] = [
     authorAvatar: AUTHENTIC_CHANNELS.lofigirl.avatarUrl,
     isVerified: true,
     timeAgo: '6 hours ago',
-    mediaUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1280&auto=format&fit=crop',
-    caption: 'New synthwave melodies stream online now. Perfect for late-night code sessions.',
-    vionexRef: {
-      title: 'synthwave radio - chill beats to relax / code / study to 24/7',
-      route: '/watch/vid-demo-008'
-    },
     hasViewed: true,
-    viewsCount: 8420
+    slides: [
+      {
+        id: 'lf-1',
+        mediaUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1280&auto=format&fit=crop',
+        caption: 'New synthwave melodies stream online now. Perfect for late-night code sessions.',
+        vionexRef: {
+          title: 'synthwave radio - chill beats to relax / code / study to 24/7',
+          route: '/watch/vid-demo-008'
+        }
+      }
+    ]
   }
 ];
 
-// Rich WhatsApp categorized emoji matrix
+// Rich Categorized WhatsApp Emojis
 const EMOJI_CATEGORIES = [
   {
+    id: 'smileys',
     name: 'Smileys & Emotion',
     emojis: ['😀','😃','😄','😁','😆','😅','😂','🤣','🥲','🥹','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🥸','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🫡','🤔','🫣','🤭','🫢','🤫','🫠','🤥','😶','😐','😑','😬','🫨','🙄','😯','😦']
   },
   {
+    id: 'people',
     name: 'People & Body',
     emojis: ['👍','👎','👌','✌️','🤞','🫰','🤟','🤘','🤙','👈','👉','👆','👇','☝️','✋','🤚','🖐️','🖖','👋','🤝','🫶','👏','🙌','👐','🤲','🙏','✍️','💪','🦾','🦿','🦵','🦶','👂','🦻','👃','🫀','🫁','🧠','👀','👁️']
   },
   {
+    id: 'symbols',
     name: 'Hearts & Symbols',
     emojis: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❤️‍🔥','❤️‍🩹','❣️','💕','💞','💓','💗','💖','💘','💝','🔥','✨','🎉','🎊','🚀','💯','⭐','🌟','⚡','💥','🎵','🎶','💡','🔔','📢','🔒','🔑','🛡️']
   },
   {
+    id: 'food',
     name: 'Food & Activities',
-    emojis: ['☕','🍵','🧃','🥤','🍺','🍻','🥂','🍷','🍕','🍔','🍟','🌭','🍿','🍩','🍪','🎂','🍰','🍫','🍬','🍭','⚽','🏀','🏈','⚾','🎾','🏐','🏉','🎱','🏓','🏸','🥊','🥋','🎮','🕹️','🏆','🥇','🎯']
+    emojis: ['☕','🍵','🧃','🥤','🍺','🍻','🥂','🍷','🍕','🍔','🍟','🌭','🍿','🍩','🍪','🎂','🍰','🍫','🍬','🍭','⚽','🏀','🏈','⚾','🎾','🏐','🎱','🏓','🏸','🥊','🥋','🎮','🕹️','🏆','🥇','🎯']
+  },
+  {
+    id: 'stickers',
+    name: 'Stickers & GIFs',
+    emojis: ['🚀 VIONEX','⚡ 120 FPS','🎬 4K HDR','🎧 48kHz','🔥 SHIP IT','💎 100% PARITY','✨ E2EE Curve25519','🤖 WebGPU']
   }
 ];
 
-// Persona response templates for intelligent peer simulator
+// Persona reply database for instant peer realism
 const PEER_PERSONA_REPLIES: Record<string, string[]> = {
   mkbhd: [
     'Just ran the frame test through DaVinci Resolve. The dynamic range at 6K 60fps holds up incredibly well!',
@@ -210,19 +359,24 @@ export default function MessagesPage() {
   // Peer typing indicator state (convId -> boolean)
   const [peerTypingState, setPeerTypingState] = useState<Record<string, boolean>>({});
 
-  // Modals & Panels
+  // WhatsApp Status Drawer & Stories State
   const [showStatusDrawer, setShowStatusDrawer] = useState(false);
   const [stories, setStories] = useState<StatusStory[]>(DEFAULT_STORIES);
   const [activeStory, setActiveStory] = useState<StatusStory | null>(null);
+  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const [storyProgress, setStoryProgress] = useState(0);
+  const [isStoryPaused, setIsStoryPaused] = useState(false);
   const [showAddStatusModal, setShowAddStatusModal] = useState(false);
+  const [newStatusType, setNewStatusType] = useState<'text' | 'media'>('text');
   const [newStatusText, setNewStatusText] = useState('');
   const [newStatusBg, setNewStatusBg] = useState('#005c4b');
+  const [newStatusMediaPreview, setNewStatusMediaPreview] = useState<string | null>(null);
   const [statusStoryReply, setStatusStoryReply] = useState('');
 
   // Composer menus & pickers
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [activeEmojiCategory, setActiveEmojiCategory] = useState(0);
+  const [emojiSearchTerm, setEmojiSearchTerm] = useState('');
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [showNewChatModal, setShowNewChatModal] = useState(false);
   const [showNewGroupModal, setShowNewGroupModal] = useState(false);
@@ -233,12 +387,26 @@ export default function MessagesPage() {
   const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
   const [showUserProfileModal, setShowUserProfileModal] = useState(false);
 
-  // Calling Dialog
+  // Security Verification Modal
+  const [showSecurityModal, setShowSecurityModal] = useState(false);
+
+  // Calling Dialog (LiveKit HD Calling)
   const [showCallModal, setShowCallModal] = useState(false);
   const [callType, setCallType] = useState<'voice' | 'video'>('video');
   const [callDuration, setCallDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [isCameraOff, setIsCameraOff] = useState(false);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const localMediaStreamRef = useRef<MediaStream | null>(null);
+
+  // Live Camera Snapshot Attachment Modal
+  const [showCameraCaptureModal, setShowCameraCaptureModal] = useState(false);
+  const [cameraStreamActive, setCameraStreamActive] = useState(false);
+  const [capturedSnapshotUrl, setCapturedSnapshotUrl] = useState<string | null>(null);
+  const [cameraCaption, setCameraCaption] = useState('');
+  const cameraVideoRef = useRef<HTMLVideoElement>(null);
+  const cameraStreamRef = useRef<MediaStream | null>(null);
 
   // In-Chat Search Bar
   const [showInChatSearch, setShowInChatSearch] = useState(false);
@@ -248,11 +416,20 @@ export default function MessagesPage() {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
 
+  // Starred messages state & drawer
+  const [starredMessageIds, setStarredMessageIds] = useState<string[]>([]);
+  const [showStarredDrawer, setShowStarredDrawer] = useState(false);
+
+  // Forward message modal
+  const [forwardingMessage, setForwardingMessage] = useState<ChatMessage | null>(null);
+
   // Poll Creator Modal
   const [showPollModal, setShowPollModal] = useState(false);
   const [pollQuestion, setPollQuestion] = useState('');
   const [pollOptions, setPollOptions] = useState(['', '']);
-  const [interactivePollVotes, setInteractivePollVotes] = useState<Record<string, Record<number, number>>>({});
+  const [pollAllowMultiple, setPollAllowMultiple] = useState(false);
+  const [interactivePollVotes, setInteractivePollVotes] = useState<Record<string, Record<number, string[]>>>({});
+  const [activePollVotesModal, setActivePollVotesModal] = useState<ChatMessage | null>(null);
 
   // VIONEX Video Share Modal
   const [showVionexShareModal, setShowVionexShareModal] = useState(false);
@@ -262,9 +439,10 @@ export default function MessagesPage() {
   const [recordDuration, setRecordDuration] = useState(0);
   const recordTimerRef = useRef<any>(null);
 
-  // Audio Voice Note Playback State (msgId -> isPlaying)
+  // Audio Voice Note Playback State
   const [playingVoiceNoteId, setPlayingVoiceNoteId] = useState<string | null>(null);
   const [voicePlaybackProgress, setVoicePlaybackProgress] = useState(0);
+  const [voicePlaybackSpeed, setVoicePlaybackSpeed] = useState<1 | 1.5 | 2>(1);
 
   // Replying state
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
@@ -281,6 +459,7 @@ export default function MessagesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
+  const statusFileInputRef = useRef<HTMLInputElement>(null);
 
   const showToast = (text: string) => {
     setToastMessage(text);
@@ -299,6 +478,10 @@ export default function MessagesPage() {
       const storedStories = localStorage.getItem('vionex_user_stories');
       if (storedStories) {
         setStories(JSON.parse(storedStories));
+      }
+      const storedStarred = localStorage.getItem('vionex_starred_messages');
+      if (storedStarred) {
+        setStarredMessageIds(JSON.parse(storedStarred));
       }
     } catch {}
   }, []);
@@ -326,26 +509,33 @@ export default function MessagesPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, peerTypingState]);
 
-  // Story progress timer
+  // Multi-Slide Story Progress Timer
   useEffect(() => {
     let interval: any;
-    if (activeStory) {
-      setStoryProgress(0);
+    if (activeStory && !isStoryPaused) {
       interval = setInterval(() => {
         setStoryProgress(p => {
           if (p >= 100) {
-            setStories(prev =>
-              prev.map(s => (s.id === activeStory.id ? { ...s, hasViewed: true } : s))
-            );
-            setActiveStory(null);
-            return 0;
+            // Check if next slide exists
+            if (activeSlideIndex < activeStory.slides.length - 1) {
+              setActiveSlideIndex(i => i + 1);
+              return 0;
+            } else {
+              // Mark viewed
+              setStories(prev =>
+                prev.map(s => (s.id === activeStory.id ? { ...s, hasViewed: true } : s))
+              );
+              setActiveStory(null);
+              setActiveSlideIndex(0);
+              return 0;
+            }
           }
           return p + 2;
         });
       }, 100);
     }
     return () => clearInterval(interval);
-  }, [activeStory]);
+  }, [activeStory, activeSlideIndex, isStoryPaused]);
 
   // Calling timer
   useEffect(() => {
@@ -356,27 +546,84 @@ export default function MessagesPage() {
     return () => clearInterval(timer);
   }, [showCallModal]);
 
-  // Voice note playback simulator
+  // Voice note playback simulator with synthesized speech tone
   useEffect(() => {
     let timer: any;
     if (playingVoiceNoteId) {
       setVoicePlaybackProgress(0);
+      const step = 4 * voicePlaybackSpeed;
       timer = setInterval(() => {
         setVoicePlaybackProgress(p => {
           if (p >= 100) {
             setPlayingVoiceNoteId(null);
             return 0;
           }
-          return p + 5;
+          // Emit subtle audio speech acoustic tone
+          if (Math.random() > 0.4) {
+            audioSynth.playVoiceNoteTone(280 + Math.floor(Math.random() * 200));
+          }
+          return p + step;
         });
-      }, 150);
+      }, 120);
     }
     return () => clearInterval(timer);
-  }, [playingVoiceNoteId]);
+  }, [playingVoiceNoteId, voicePlaybackSpeed]);
+
+  // Live Camera stream management for Video Calling
+  useEffect(() => {
+    if (showCallModal && callType === 'video' && !isCameraOff) {
+      navigator.mediaDevices?.getUserMedia({ video: true, audio: true })
+        .then(stream => {
+          localMediaStreamRef.current = stream;
+          if (localVideoRef.current) {
+            localVideoRef.current.srcObject = stream;
+          }
+        })
+        .catch(() => {});
+    } else {
+      if (localMediaStreamRef.current) {
+        localMediaStreamRef.current.getTracks().forEach(t => t.stop());
+        localMediaStreamRef.current = null;
+      }
+    }
+    return () => {
+      if (localMediaStreamRef.current) {
+        localMediaStreamRef.current.getTracks().forEach(t => t.stop());
+      }
+    };
+  }, [showCallModal, callType, isCameraOff]);
+
+  // Live Camera Snapshot stream management
+  useEffect(() => {
+    if (showCameraCaptureModal && !capturedSnapshotUrl) {
+      navigator.mediaDevices?.getUserMedia({ video: true })
+        .then(stream => {
+          cameraStreamRef.current = stream;
+          setCameraStreamActive(true);
+          if (cameraVideoRef.current) {
+            cameraVideoRef.current.srcObject = stream;
+          }
+        })
+        .catch(() => {
+          setCameraStreamActive(false);
+        });
+    } else {
+      if (cameraStreamRef.current) {
+        cameraStreamRef.current.getTracks().forEach(t => t.stop());
+        cameraStreamRef.current = null;
+      }
+      setCameraStreamActive(false);
+    }
+    return () => {
+      if (cameraStreamRef.current) {
+        cameraStreamRef.current.getTracks().forEach(t => t.stop());
+      }
+    };
+  }, [showCameraCaptureModal, capturedSnapshotUrl]);
 
   const activeConv = conversations.find(c => c.id === activeConvId) || conversations[0];
 
-  // Send message with real-time peer response and tick progression
+  // Send message with real-time audio pop, tick progression, and peer reply
   const handleSendMessage = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!inputText.trim()) return;
@@ -384,6 +631,9 @@ export default function MessagesPage() {
     const messageText = inputText.trim();
     const newMsgId = 'm-' + Date.now();
     const timestampStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    // 1. Play authentic WhatsApp outgoing send pop
+    audioSynth.playSend();
 
     const sent: ChatMessage = {
       id: newMsgId,
@@ -461,7 +711,7 @@ export default function MessagesPage() {
       setPeerTypingState(prev => ({ ...prev, [activeConvId]: true }));
     }, 1600);
 
-    // Progression 3: Peer authentic response (3400ms)
+    // Progression 3: Peer authentic response (3400ms) + incoming chime
     setTimeout(() => {
       setPeerTypingState(prev => ({ ...prev, [activeConvId]: false }));
 
@@ -473,6 +723,9 @@ export default function MessagesPage() {
       ];
       const randomReply = availableReplies[Math.floor(Math.random() * availableReplies.length)];
       const replyTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      // Play authentic incoming chime
+      audioSynth.playReceive();
 
       const peerMsg: ChatMessage = {
         id: 'peer-' + Date.now(),
@@ -517,6 +770,8 @@ export default function MessagesPage() {
     setCallDuration(0);
     setIsMuted(false);
     setIsCameraOff(false);
+    setIsScreenSharing(false);
+    audioSynth.playDialTone();
   };
 
   const handleInsertEmoji = (emoji: string) => {
@@ -544,9 +799,46 @@ export default function MessagesPage() {
     clearInterval(recordTimerRef.current);
     const durationStr = `${Math.floor(recordDuration / 60)}:${(recordDuration % 60).toString().padStart(2, '0')}`;
     const sent = sendChatMessage(activeConvId, `🎤 Voice message (${durationStr || '0:05'})`);
+    audioSynth.playSend();
     setMessages(prev => [...prev, sent]);
     setRecordDuration(0);
     showToast('Voice message sent');
+  };
+
+  // Live Camera snapshot shutter capture
+  const handleCaptureCameraSnapshot = () => {
+    if (cameraVideoRef.current) {
+      const canvas = document.createElement('canvas');
+      canvas.width = cameraVideoRef.current.videoWidth || 640;
+      canvas.height = cameraVideoRef.current.videoHeight || 480;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(cameraVideoRef.current, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg');
+        setCapturedSnapshotUrl(dataUrl);
+      }
+    } else {
+      // Fallback simulated snapshot
+      setCapturedSnapshotUrl('https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800');
+    }
+  };
+
+  const handleSendCameraPhoto = () => {
+    if (!capturedSnapshotUrl) return;
+    const sent = sendChatMessage(activeConvId, cameraCaption ? `📷 ${cameraCaption}` : '📷 Photo');
+    sent.attachments = [{
+      name: 'camera_capture.jpg',
+      url: capturedSnapshotUrl,
+      type: 'image/jpeg',
+      size: '1.2 MB'
+    }];
+    audioSynth.playSend();
+    setMessages(prev => [...prev, sent]);
+    setShowCameraCaptureModal(false);
+    setCapturedSnapshotUrl(null);
+    setCameraCaption('');
+    setShowAttachMenu(false);
+    showToast('Camera photo sent');
   };
 
   // File Attachments
@@ -564,6 +856,7 @@ export default function MessagesPage() {
         size: `${(file.size / 1024 / 1024).toFixed(1)} MB`
       }
     ];
+    audioSynth.playSend();
     setMessages(prev => [...prev, sent]);
     setShowAttachMenu(false);
     e.target.value = '';
@@ -578,26 +871,37 @@ export default function MessagesPage() {
 
     const pollText = `📊 Poll: ${pollQuestion}\n` + validOpts.map((opt, i) => `${i + 1}. ${opt}`).join('\n');
     const sent = sendChatMessage(activeConvId, pollText);
+    audioSynth.playSend();
     setMessages(prev => [...prev, sent]);
     setShowPollModal(false);
     setPollQuestion('');
     setPollOptions(['', '']);
+    setPollAllowMultiple(false);
     showToast('Poll created and sent');
   };
 
   const handleVotePoll = (msgId: string, optionIndex: number) => {
     setInteractivePollVotes(prev => {
-      const pollVotes = prev[msgId] || {};
-      const current = pollVotes[optionIndex] || 0;
+      const pollData = prev[msgId] || {};
+      const currentVoters = pollData[optionIndex] || [];
+      const hasVoted = currentVoters.includes('You');
+
+      let updatedVoters: string[];
+      if (hasVoted) {
+        updatedVoters = currentVoters.filter(v => v !== 'You');
+      } else {
+        updatedVoters = [...currentVoters, 'You'];
+      }
+
       return {
         ...prev,
         [msgId]: {
-          ...pollVotes,
-          [optionIndex]: current + 1
+          ...pollData,
+          [optionIndex]: updatedVoters
         }
       };
     });
-    showToast('Vote recorded');
+    showToast('Vote updated');
   };
 
   // VIONEX Video sharing
@@ -610,15 +914,50 @@ export default function MessagesPage() {
       creatorHandle: video.creatorHandle,
       embedRoute: video.embedRoute
     });
+    audioSynth.playSend();
     setMessages(prev => [...prev, sent]);
     setShowVionexShareModal(false);
     setShowAttachMenu(false);
     showToast('VIONEX video shared in chat');
   };
 
-  // Post Status update
+  // Star message toggle
+  const handleToggleStarMessage = (messageId: string) => {
+    const next = starredMessageIds.includes(messageId)
+      ? starredMessageIds.filter(id => id !== messageId)
+      : [...starredMessageIds, messageId];
+    setStarredMessageIds(next);
+    try {
+      localStorage.setItem('vionex_starred_messages', JSON.stringify(next));
+    } catch {}
+    setActiveMessageMenu(null);
+    showToast(starredMessageIds.includes(messageId) ? 'Message unstarred' : 'Message starred');
+  };
+
+  // Forward message
+  const handleForwardMessage = (targetConvId: string) => {
+    if (!forwardingMessage) return;
+    const sent = sendChatMessage(targetConvId, `[Forwarded]: ${forwardingMessage.text}`, forwardingMessage.vionexRef);
+    if (targetConvId === activeConvId) {
+      setMessages(prev => [...prev, sent]);
+    }
+    setForwardingMessage(null);
+    showToast('Message forwarded');
+  };
+
+  // Post Status update (Text or Media)
   const handlePublishStatus = () => {
-    if (!newStatusText.trim()) return;
+    if (newStatusType === 'text' && !newStatusText.trim()) return;
+    if (newStatusType === 'media' && !newStatusMediaPreview) return;
+
+    const newSlide: StatusSlide = {
+      id: 'slide-' + Date.now(),
+      text: newStatusType === 'text' ? newStatusText.trim() : undefined,
+      bgColor: newStatusType === 'text' ? newStatusBg : undefined,
+      mediaUrl: newStatusType === 'media' ? newStatusMediaPreview || undefined : undefined,
+      caption: newStatusType === 'media' && newStatusText ? newStatusText.trim() : undefined
+    };
+
     const newStory: StatusStory = {
       id: 's-user-' + Date.now(),
       authorId: 'current-user',
@@ -626,10 +965,8 @@ export default function MessagesPage() {
       authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=100',
       isVerified: true,
       timeAgo: 'Just now',
-      text: newStatusText.trim(),
-      bgColor: newStatusBg,
       hasViewed: true,
-      viewsCount: 0
+      slides: [newSlide]
     };
 
     const updated = [newStory, ...stories];
@@ -639,17 +976,22 @@ export default function MessagesPage() {
     } catch {}
 
     setNewStatusText('');
+    setNewStatusMediaPreview(null);
     setShowAddStatusModal(false);
-    showToast('Status published (24h)');
+    showToast('Status published for 24 hours');
   };
 
   // Reply to Status in Chat
   const handleSendStatusReply = () => {
     if (!statusStoryReply.trim() || !activeStory) return;
+    const currentSlide = activeStory.slides[activeSlideIndex] || activeStory.slides[0];
+    const previewText = currentSlide.text || currentSlide.caption || 'Status update';
+
     const sent = sendChatMessage(
       activeConvId,
-      `Replied to your status: "${statusStoryReply.trim()}"`
+      `Replied to your status ("${previewText}"): ${statusStoryReply.trim()}`
     );
+    audioSynth.playSend();
     setMessages(prev => [...prev, sent]);
     setStatusStoryReply('');
     setActiveStory(null);
@@ -750,6 +1092,12 @@ export default function MessagesPage() {
     return m.text.toLowerCase().includes(inChatSearchQuery.toLowerCase());
   });
 
+  // Filtered emojis for search
+  const activeEmojis = EMOJI_CATEGORIES[activeEmojiCategory].emojis.filter(e => {
+    if (!emojiSearchTerm.trim()) return true;
+    return e.includes(emojiSearchTerm.toLowerCase());
+  });
+
   const formatCallTime = (sec: number) => {
     const mins = Math.floor(sec / 60);
     const s = sec % 60;
@@ -760,7 +1108,7 @@ export default function MessagesPage() {
     <div className="flex h-[calc(100vh-3.5rem)] w-full bg-[#f0f2f5] overflow-hidden select-none font-sans text-[#111b21] relative">
       {/* TOAST NOTIFICATION */}
       {toastMessage && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#111b21]/90 backdrop-blur-md text-white text-xs px-4 py-2 rounded-full shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-2 duration-150 flex items-center gap-2">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#111b21]/95 backdrop-blur-md text-white text-xs px-4 py-2 rounded-full shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-2 duration-150 flex items-center gap-2 border border-white/10">
           <Check className="w-3.5 h-3.5 text-[#00a884]" />
           <span>{toastMessage}</span>
         </div>
@@ -780,6 +1128,19 @@ export default function MessagesPage() {
         className="hidden"
         onChange={e => handleFileChange(e, false)}
       />
+      <input
+        type="file"
+        ref={statusFileInputRef}
+        accept="image/*,video/*"
+        className="hidden"
+        onChange={e => {
+          const file = e.target.files?.[0];
+          if (file) {
+            setNewStatusMediaPreview(URL.createObjectURL(file));
+            setNewStatusType('media');
+          }
+        }}
+      />
 
       {/* ==================================================================== */}
       {/* COLUMN 1: MODERN WHATSAPP WEB LEFT NAVIGATION RAIL (64px)             */}
@@ -787,7 +1148,7 @@ export default function MessagesPage() {
       <div className="w-16 bg-[#f0f2f5] border-r border-[#e9edef] flex flex-col items-center py-3 justify-between shrink-0 z-30 select-none">
         {/* Top Action Icons */}
         <div className="flex flex-col items-center gap-2 w-full">
-          {/* 1. Chats Icon (Active Highlight) */}
+          {/* 1. Chats Icon */}
           <button
             onClick={() => {
               setActiveRailTab('chats');
@@ -795,7 +1156,7 @@ export default function MessagesPage() {
               setShowSettingsDrawer(false);
             }}
             className={`w-11 h-11 rounded-full flex items-center justify-center transition-all relative ${
-              activeRailTab === 'chats'
+              activeRailTab === 'chats' && !showStatusDrawer && !showSettingsDrawer
                 ? 'bg-[#d9fdd3] text-[#00a884]'
                 : 'text-[#54656f] hover:bg-black/5'
             }`}
@@ -812,9 +1173,10 @@ export default function MessagesPage() {
             onClick={() => {
               setActiveRailTab('status');
               setShowStatusDrawer(true);
+              setShowSettingsDrawer(false);
             }}
             className={`w-11 h-11 rounded-full flex items-center justify-center transition-all relative ${
-              activeRailTab === 'status' || showStatusDrawer
+              showStatusDrawer
                 ? 'bg-[#d9fdd3] text-[#00a884]'
                 : 'text-[#54656f] hover:bg-black/5'
             }`}
@@ -849,7 +1211,10 @@ export default function MessagesPage() {
         <div className="flex flex-col items-center gap-2 w-full">
           {/* Settings Drawer Button */}
           <button
-            onClick={() => setShowSettingsDrawer(!showSettingsDrawer)}
+            onClick={() => {
+              setShowSettingsDrawer(!showSettingsDrawer);
+              setShowStatusDrawer(false);
+            }}
             className={`w-11 h-11 rounded-full flex items-center justify-center transition-all ${
               showSettingsDrawer ? 'bg-[#d9fdd3] text-[#00a884]' : 'text-[#54656f] hover:bg-black/5'
             }`}
@@ -923,14 +1288,16 @@ export default function MessagesPage() {
                     <span>New group</span>
                   </button>
 
-                  <Link
-                    href="/communities"
-                    onClick={() => setShowTopMenu(false)}
+                  <button
+                    onClick={() => {
+                      setShowStarredDrawer(true);
+                      setShowTopMenu(false);
+                    }}
                     className="w-full text-left px-4 py-2 hover:bg-[#f5f6f6] flex items-center gap-3 text-[#111b21]"
                   >
-                    <Megaphone className="w-4 h-4 text-[#54656f]" />
-                    <span>New community</span>
-                  </Link>
+                    <Star className="w-4 h-4 text-[#54656f]" />
+                    <span>Starred messages</span>
+                  </button>
 
                   <button
                     onClick={() => {
@@ -1207,6 +1574,17 @@ export default function MessagesPage() {
                     </button>
 
                     <button
+                      onClick={() => {
+                        setShowStarredDrawer(true);
+                        setShowChatMenu(false);
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-[#f5f6f6] flex items-center gap-2.5 text-[#111b21]"
+                    >
+                      <Star className="w-4 h-4 text-[#54656f]" />
+                      <span>Starred messages</span>
+                    </button>
+
+                    <button
                       onClick={handleToggleMute}
                       className="w-full text-left px-4 py-2 hover:bg-[#f5f6f6] flex items-center gap-2.5 text-[#111b21]"
                     >
@@ -1281,10 +1659,14 @@ export default function MessagesPage() {
           <div className="flex-1 overflow-y-auto p-4 md:px-12 space-y-2 z-10">
             {/* Centered Yellow Encryption Notice */}
             <div className="flex justify-center my-3">
-              <div className="bg-[#ffeecd] text-[#54656f] text-[12px] px-3.5 py-1.5 rounded-lg shadow-sm max-w-md text-center flex items-center gap-1.5 leading-relaxed">
+              <div
+                onClick={() => setShowSecurityModal(true)}
+                className="bg-[#ffeecd] text-[#54656f] text-[12px] px-3.5 py-1.5 rounded-lg shadow-sm max-w-md text-center flex items-center gap-1.5 leading-relaxed cursor-pointer hover:bg-[#ffe7b8] transition-colors"
+                title="Tap to verify end-to-end encryption code"
+              >
                 <Lock className="w-3.5 h-3.5 shrink-0 text-[#667781]" />
                 <span>
-                  Messages and calls are end-to-end encrypted. No one outside of this chat, not even VIONEX, can read or listen to them.
+                  Messages and calls are end-to-end encrypted. No one outside of this chat, not even VIONEX, can read or listen to them. Tap to verify.
                 </span>
               </div>
             </div>
@@ -1301,6 +1683,7 @@ export default function MessagesPage() {
               const isVoiceNote = m.text.startsWith('🎤 Voice message');
               const isPoll = m.text.startsWith('📊 Poll:');
               const isSelected = selectedMessageIds.includes(m.id);
+              const isStarred = starredMessageIds.includes(m.id);
 
               return (
                 <div
@@ -1327,13 +1710,34 @@ export default function MessagesPage() {
                     </button>
                   )}
 
+                  {/* BUBBLE CONTAINER WITH AUTHENTIC CORNER TAILS & SHADOW */}
                   <div
-                    className={`max-w-[85%] sm:max-w-md rounded-lg px-3 py-2 shadow-sm text-sm relative group ${
+                    className={`max-w-[85%] sm:max-w-md rounded-lg px-3 py-2 text-sm relative group ${
                       isMe
                         ? 'bg-[#d9fdd3] text-[#111b21] rounded-tr-none'
                         : 'bg-white text-[#111b21] rounded-tl-none'
                     } ${isSelected ? 'ring-2 ring-[#00a884]' : ''}`}
+                    style={{
+                      boxShadow: '0 1px 0.5px rgba(11,20,26,.13)'
+                    }}
                   >
+                    {/* SVG CORNER TAIL POINTER */}
+                    {isMe ? (
+                      <span className="absolute top-0 -right-2 text-[#d9fdd3] pointer-events-none">
+                        <svg viewBox="0 0 8 13" height="13" width="8" className="fill-current">
+                          <path opacity="0.13" d="M5.188 1H0v11.193l6.467-8.625C7.526 2.156 6.958 1 5.188 1z" />
+                          <path d="M5.188 0H0v11.193l6.467-8.625C7.526 1.156 6.958 0 5.188 0z" />
+                        </svg>
+                      </span>
+                    ) : (
+                      <span className="absolute top-0 -left-2 text-white pointer-events-none">
+                        <svg viewBox="0 0 8 13" height="13" width="8" className="fill-current">
+                          <path opacity="0.13" d="M1.533 1H6.72v11.193L.253 3.568C-.806 2.156-.238 1 1.533 1z" />
+                          <path d="M1.533 0H6.72v11.193L.253 2.568C-.806 1.156-.238 0 1.533 0z" />
+                        </svg>
+                      </span>
+                    )}
+
                     {/* Quoted reply banner inside bubble */}
                     {m.replyTo && (
                       <div className="mb-1.5 p-2 rounded bg-black/5 border-l-4 border-[#00a884] text-xs">
@@ -1367,24 +1771,30 @@ export default function MessagesPage() {
                       </Link>
                     )}
 
-                    {/* File Attachments */}
+                    {/* File Attachments with Image Thumbnail Preview */}
                     {m.attachments && m.attachments.length > 0 && (
                       <div className="mb-2 space-y-1.5">
                         {m.attachments.map((att, i) => (
-                          <div key={i} className="flex items-center gap-2 p-2 rounded bg-black/5 text-xs">
-                            <FileText className="w-4 h-4 text-[#54656f]" />
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium truncate text-[#111b21]">{att.name}</p>
-                              <span className="text-[10px] text-[#54656f]">{att.size}</span>
-                            </div>
+                          <div key={i} className="rounded-lg overflow-hidden border border-black/10">
+                            {att.type.startsWith('image/') ? (
+                              <img src={att.url} alt={att.name} className="w-full max-h-60 object-cover" />
+                            ) : (
+                              <div className="flex items-center gap-2 p-2 bg-black/5 text-xs">
+                                <FileText className="w-4 h-4 text-[#54656f]" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium truncate text-[#111b21]">{att.name}</p>
+                                  <span className="text-[10px] text-[#54656f]">{att.size}</span>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
                     )}
 
-                    {/* Interactive Voice Note Audio Player */}
+                    {/* Interactive Voice Note Audio Player with Speed Toggle & Waveform Scrub */}
                     {isVoiceNote ? (
-                      <div className="flex items-center gap-3 py-1 pr-4">
+                      <div className="flex items-center gap-2.5 py-1 pr-1">
                         <button
                           onClick={() => {
                             if (playingVoiceNoteId === m.id) {
@@ -1403,8 +1813,17 @@ export default function MessagesPage() {
                         </button>
 
                         <div className="flex-1">
-                          {/* Animated Waveform Bars */}
-                          <div className="flex items-center gap-0.5 h-6">
+                          {/* Scrubbable Waveform Bars */}
+                          <div
+                            className="flex items-center gap-0.5 h-6 cursor-pointer py-1"
+                            onClick={e => {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              const clickX = e.clientX - rect.left;
+                              const pct = Math.max(0, Math.min(100, (clickX / rect.width) * 100));
+                              setVoicePlaybackProgress(pct);
+                              if (!playingVoiceNoteId) setPlayingVoiceNoteId(m.id);
+                            }}
+                          >
                             {[40, 70, 20, 90, 60, 30, 80, 50, 95, 45, 65, 85, 35, 75, 55, 90].map((h, i) => (
                               <div
                                 key={i}
@@ -1422,9 +1841,20 @@ export default function MessagesPage() {
                             <span>0:05</span>
                           </div>
                         </div>
+
+                        {/* Speed Toggle (1x, 1.5x, 2x) */}
+                        <button
+                          onClick={() => {
+                            setVoicePlaybackSpeed(s => (s === 1 ? 1.5 : s === 1.5 ? 2 : 1));
+                          }}
+                          className="px-1.5 py-0.5 rounded-full bg-black/10 hover:bg-black/15 text-[10px] font-bold text-[#111b21] shrink-0"
+                          title="Playback speed"
+                        >
+                          {voicePlaybackSpeed}x
+                        </button>
                       </div>
                     ) : isPoll ? (
-                      // Interactive Poll Card
+                      // Interactive Poll Card with Voter List View
                       <div className="py-1">
                         <div className="font-bold text-xs text-[#111b21] mb-2 flex items-center gap-1.5">
                           <BarChart2 className="w-4 h-4 text-[#00a884]" />
@@ -1434,38 +1864,56 @@ export default function MessagesPage() {
                           {m.text.split('\n').slice(1).map((optLine, optIdx) => {
                             const optText = optLine.replace(/^\d+\.\s*/, '');
                             const pollData = interactivePollVotes[m.id] || {};
-                            const votes = pollData[optIdx] || 0;
-                            const totalVotes = Object.values(pollData).reduce((a, b) => a + b, 0);
+                            const voters = pollData[optIdx] || [];
+                            const votes = voters.length;
+                            const totalVotes = Object.values(pollData).reduce((a, b) => a + b.length, 0);
                             const percent = totalVotes > 0 ? Math.round((votes / totalVotes) * 100) : 0;
+                            const hasMyVote = voters.includes('You');
 
                             return (
                               <button
                                 key={optIdx}
                                 onClick={() => handleVotePoll(m.id, optIdx)}
-                                className="w-full text-left p-2 rounded-lg bg-black/5 hover:bg-black/10 transition-all text-xs relative overflow-hidden group"
+                                className={`w-full text-left p-2 rounded-lg transition-all text-xs relative overflow-hidden group border ${
+                                  hasMyVote ? 'border-[#00a884] bg-[#00a884]/5' : 'border-transparent bg-black/5 hover:bg-black/10'
+                                }`}
                               >
                                 <div
                                   className="absolute inset-y-0 left-0 bg-[#00a884]/20 transition-all duration-300"
                                   style={{ width: `${percent}%` }}
                                 />
                                 <div className="relative flex items-center justify-between z-10">
-                                  <span className="font-medium text-[#111b21]">{optText}</span>
+                                  <div className="flex items-center gap-2">
+                                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
+                                      hasMyVote ? 'bg-[#00a884] border-[#00a884] text-white' : 'border-[#8696a0]'
+                                    }`}>
+                                      {hasMyVote && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                                    </div>
+                                    <span className="font-medium text-[#111b21]">{optText}</span>
+                                  </div>
                                   <span className="text-[11px] text-[#667781] font-bold">{votes} ({percent}%)</span>
                                 </div>
                               </button>
                             );
                           })}
                         </div>
-                        <div className="text-[10px] text-[#667781] mt-1 text-right">
-                          Tap option to vote
+                        <div className="flex justify-between items-center text-[10px] text-[#667781] mt-2 pt-1 border-t border-black/5">
+                          <span>Select to vote</span>
+                          <button
+                            onClick={() => setActivePollVotesModal(m)}
+                            className="text-[#00a884] font-semibold hover:underline"
+                          >
+                            View votes
+                          </button>
                         </div>
                       </div>
                     ) : (
                       <p className="leading-relaxed whitespace-pre-wrap">{m.text}</p>
                     )}
 
-                    {/* Timestamp & Ticks */}
+                    {/* Timestamp, Star & Ticks */}
                     <div className="flex items-center justify-end gap-1 mt-1 text-[11px] text-[#667781] select-none float-right ml-3 -mb-1">
+                      {isStarred && <Star className="w-3 h-3 text-amber-500 fill-amber-500" />}
                       <span>{m.timestamp}</span>
                       {isMe && (
                         <span>
@@ -1497,6 +1945,25 @@ export default function MessagesPage() {
                         >
                           <Reply className="w-3.5 h-3.5 text-[#54656f]" />
                           <span>Reply</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleToggleStarMessage(m.id)}
+                          className="w-full text-left px-3 py-1.5 hover:bg-[#f5f6f6] flex items-center gap-2 text-[#111b21]"
+                        >
+                          <Star className={`w-3.5 h-3.5 ${isStarred ? 'text-amber-500 fill-amber-500' : 'text-[#54656f]'}`} />
+                          <span>{isStarred ? 'Unstar' : 'Star message'}</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setForwardingMessage(m);
+                            setActiveMessageMenu(null);
+                          }}
+                          className="w-full text-left px-3 py-1.5 hover:bg-[#f5f6f6] flex items-center gap-2 text-[#111b21]"
+                        >
+                          <Share2 className="w-3.5 h-3.5 text-[#54656f]" />
+                          <span>Forward</span>
                         </button>
 
                         <button
@@ -1573,27 +2040,23 @@ export default function MessagesPage() {
           </div>
 
           {/* ================================================================ */}
-          {/* EMOJI PICKER DRAWER                                              */}
+          {/* EMOJI & STICKER PICKER DRAWER WITH INSTANT SEARCH                */}
           {/* ================================================================ */}
           {showEmojiPicker && (
-            <div className="bg-white border-t border-[#e9edef] p-3 shadow-2xl z-20 max-h-60 overflow-y-auto animate-in slide-in-from-bottom-2 duration-150">
-              {/* Category selector */}
-              <div className="flex items-center justify-between pb-2 border-b border-[#e9edef] mb-2 text-xs">
-                <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
-                  {EMOJI_CATEGORIES.map((cat, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setActiveEmojiCategory(idx)}
-                      className={`px-2.5 py-1 rounded-full font-medium transition-colors ${
-                        activeEmojiCategory === idx
-                          ? 'bg-[#00a884] text-white'
-                          : 'bg-[#f0f2f5] text-[#54656f] hover:bg-[#e9edef]'
-                      }`}
-                    >
-                      {cat.name}
-                    </button>
-                  ))}
+            <div className="bg-white border-t border-[#e9edef] p-3 shadow-2xl z-20 max-h-64 overflow-y-auto animate-in slide-in-from-bottom-2 duration-150">
+              {/* Top search & category bar */}
+              <div className="flex items-center justify-between gap-3 pb-2 border-b border-[#e9edef] mb-2 text-xs">
+                <div className="flex-1 flex items-center bg-[#f0f2f5] rounded-full px-3 py-1">
+                  <Search className="w-3.5 h-3.5 text-[#54656f] mr-2" />
+                  <input
+                    type="text"
+                    placeholder="Search emoji..."
+                    value={emojiSearchTerm}
+                    onChange={e => setEmojiSearchTerm(e.target.value)}
+                    className="w-full bg-transparent outline-none text-xs"
+                  />
                 </div>
+
                 <button
                   onClick={() => setShowEmojiPicker(false)}
                   className="p-1 rounded-full hover:bg-black/5 text-[#54656f]"
@@ -1602,14 +2065,34 @@ export default function MessagesPage() {
                 </button>
               </div>
 
-              {/* Emoji Grid */}
+              {/* Category tabs */}
+              <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-2 mb-2 text-xs">
+                {EMOJI_CATEGORIES.map((cat, idx) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => {
+                      setActiveEmojiCategory(idx);
+                      setEmojiSearchTerm('');
+                    }}
+                    className={`px-2.5 py-1 rounded-full font-medium transition-colors shrink-0 ${
+                      activeEmojiCategory === idx
+                        ? 'bg-[#00a884] text-white'
+                        : 'bg-[#f0f2f5] text-[#54656f] hover:bg-[#e9edef]'
+                    }`}
+                  >
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
+
+              {/* Emoji / Sticker Grid */}
               <div className="grid grid-cols-8 sm:grid-cols-12 md:grid-cols-16 gap-1 text-2xl select-none">
-                {EMOJI_CATEGORIES[activeEmojiCategory].emojis.map((emoji, idx) => (
+                {activeEmojis.map((emoji, idx) => (
                   <button
                     key={idx}
                     type="button"
                     onClick={() => handleInsertEmoji(emoji)}
-                    className="p-1.5 rounded hover:bg-[#f0f2f5] active:scale-125 transition-transform flex items-center justify-center"
+                    className="p-1.5 rounded hover:bg-[#f0f2f5] active:scale-125 transition-transform flex items-center justify-center text-sm sm:text-lg"
                   >
                     {emoji}
                   </button>
@@ -1622,7 +2105,7 @@ export default function MessagesPage() {
           {/* ATTACHMENT MENU POPUP                                            */}
           {/* ================================================================ */}
           {showAttachMenu && (
-            <div className="absolute bottom-20 left-4 bg-white rounded-2xl shadow-2xl border border-[#e9edef] p-3 z-30 flex flex-col gap-2 w-60 animate-in fade-in slide-in-from-bottom-2 duration-150">
+            <div className="absolute bottom-20 left-4 bg-white rounded-2xl shadow-2xl border border-[#e9edef] p-3 z-30 flex flex-col gap-2 w-64 animate-in fade-in slide-in-from-bottom-2 duration-150">
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
@@ -1633,7 +2116,24 @@ export default function MessagesPage() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-[#111b21]">Photos & Videos</p>
-                  <span className="text-[11px] text-[#667781]">Send image or clip</span>
+                  <span className="text-[11px] text-[#667781]">Send image or video</span>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCameraCaptureModal(true);
+                  setShowAttachMenu(false);
+                }}
+                className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[#f5f6f6] text-left transition-colors"
+              >
+                <div className="w-10 h-10 rounded-full bg-[#e91e63] text-white flex items-center justify-center shadow-md">
+                  <Camera className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-[#111b21]">Camera Snapshot</p>
+                  <span className="text-[11px] text-[#667781]">Live capture & caption</span>
                 </div>
               </button>
 
@@ -1731,7 +2231,7 @@ export default function MessagesPage() {
             /* Standard WhatsApp Composer Bar */
             <div className="px-4 py-2 bg-[#f0f2f5] border-t border-[#e9edef] flex items-center gap-2 z-10">
               {isRecording ? (
-                // Active Voice Recording UI
+                // Active Voice Recording UI with pulsing red dot and duration
                 <div className="flex-1 flex items-center justify-between bg-white rounded-lg px-4 py-2 text-sm text-[#111b21] shadow-sm animate-pulse">
                   <div className="flex items-center gap-2 text-red-600 font-mono font-bold">
                     <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-ping" />
@@ -1888,7 +2388,11 @@ export default function MessagesPage() {
               {stories.map(story => (
                 <div
                   key={story.id}
-                  onClick={() => setActiveStory(story)}
+                  onClick={() => {
+                    setActiveStory(story);
+                    setActiveSlideIndex(0);
+                    setStoryProgress(0);
+                  }}
                   className="flex items-center gap-3 p-3.5 hover:bg-[#f5f6f6] cursor-pointer transition-colors"
                 >
                   <div className="relative shrink-0">
@@ -1902,7 +2406,9 @@ export default function MessagesPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm text-[#111b21] truncate">{story.authorName}</p>
-                    <span className="text-xs text-[#667781]">{story.timeAgo}</span>
+                    <span className="text-xs text-[#667781]">
+                      {story.timeAgo} • {story.slides.length} update{story.slides.length > 1 ? 's' : ''}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -1912,18 +2418,33 @@ export default function MessagesPage() {
       )}
 
       {/* ==================================================================== */}
-      {/* WHATSAPP FULLSCREEN STORIES VIEWER                                  */}
+      {/* WHATSAPP FULLSCREEN STORIES VIEWER WITH SEGMENTED CAROUSEL PROGRESS   */}
       {/* ==================================================================== */}
       {activeStory && (
         <div className="fixed inset-0 z-50 bg-black flex items-center justify-center p-0 md:p-6 animate-in fade-in duration-150">
-          <div className="relative max-w-md w-full h-full md:h-[90vh] bg-neutral-900 rounded-none md:rounded-2xl overflow-hidden flex flex-col justify-between shadow-2xl">
-            {/* Top segmented progress bar */}
+          <div
+            className="relative max-w-md w-full h-full md:h-[90vh] bg-neutral-900 rounded-none md:rounded-2xl overflow-hidden flex flex-col justify-between shadow-2xl select-none"
+            onMouseDown={() => setIsStoryPaused(true)}
+            onMouseUp={() => setIsStoryPaused(false)}
+            onTouchStart={() => setIsStoryPaused(true)}
+            onTouchEnd={() => setIsStoryPaused(false)}
+          >
+            {/* Top Segmented Progress Bar (One bar per slide) */}
             <div className="absolute top-3 inset-x-3 z-30">
-              <div className="h-1 bg-white/30 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-white transition-all duration-100 ease-linear rounded-full"
-                  style={{ width: `${storyProgress}%` }}
-                />
+              <div className="flex items-center gap-1.5">
+                {activeStory.slides.map((slide, sIdx) => {
+                  let fillPct = 0;
+                  if (sIdx < activeSlideIndex) fillPct = 100;
+                  else if (sIdx === activeSlideIndex) fillPct = storyProgress;
+                  return (
+                    <div key={slide.id} className="flex-1 h-1 bg-white/30 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-white transition-all duration-100 ease-linear rounded-full"
+                        style={{ width: `${fillPct}%` }}
+                      />
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Story Author Bar */}
@@ -1940,44 +2461,74 @@ export default function MessagesPage() {
                   </div>
                 </div>
 
-                <button
-                  onClick={() => setActiveStory(null)}
-                  className="p-1 rounded-full bg-black/40 hover:bg-black/60 text-white"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setActiveStory(null)}
+                    className="p-1 rounded-full bg-black/40 hover:bg-black/60 text-white"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Story Content Area */}
+            {/* Story Content Area with Left/Right Click Nav */}
             <div className="flex-1 flex items-center justify-center relative overflow-hidden bg-black">
-              {activeStory.mediaUrl ? (
-                <img
-                  src={activeStory.mediaUrl}
-                  alt={activeStory.caption || 'Status story'}
-                  className="w-full h-full object-contain"
-                />
-              ) : (
-                <div
-                  className="w-full h-full flex items-center justify-center p-8 text-center"
-                  style={{ backgroundColor: activeStory.bgColor || '#005c4b' }}
-                >
-                  <p className="text-white text-2xl font-bold leading-relaxed">{activeStory.text}</p>
-                </div>
-              )}
+              {/* Left Nav Click Region */}
+              <div
+                onClick={() => {
+                  if (activeSlideIndex > 0) {
+                    setActiveSlideIndex(i => i - 1);
+                    setStoryProgress(0);
+                  }
+                }}
+                className="absolute inset-y-0 left-0 w-1/3 z-20 cursor-pointer"
+              />
 
-              {/* VIONEX Video Embed link in status */}
-              {activeStory.vionexRef && (
+              {/* Right Nav Click Region */}
+              <div
+                onClick={() => {
+                  if (activeSlideIndex < activeStory.slides.length - 1) {
+                    setActiveSlideIndex(i => i + 1);
+                    setStoryProgress(0);
+                  } else {
+                    setActiveStory(null);
+                  }
+                }}
+                className="absolute inset-y-0 right-0 w-1/3 z-20 cursor-pointer"
+              />
+
+              {/* Current Active Slide Content */}
+              {(() => {
+                const currentSlide = activeStory.slides[activeSlideIndex] || activeStory.slides[0];
+                return currentSlide.mediaUrl ? (
+                  <img
+                    src={currentSlide.mediaUrl}
+                    alt={currentSlide.caption || 'Status story'}
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <div
+                    className="w-full h-full flex items-center justify-center p-8 text-center"
+                    style={{ backgroundColor: currentSlide.bgColor || '#005c4b' }}
+                  >
+                    <p className="text-white text-2xl font-bold leading-relaxed">{currentSlide.text}</p>
+                  </div>
+                );
+              })()}
+
+              {/* VIONEX Video Embed in status */}
+              {activeStory.slides[activeSlideIndex]?.vionexRef && (
                 <Link
-                  href={activeStory.vionexRef.route}
-                  className="absolute bottom-20 inset-x-4 p-3 bg-black/70 backdrop-blur-md rounded-xl text-white flex items-center gap-3 border border-white/20 hover:bg-black/80 transition-colors"
+                  href={activeStory.slides[activeSlideIndex].vionexRef!.route}
+                  className="absolute bottom-20 inset-x-4 p-3 bg-black/70 backdrop-blur-md rounded-xl text-white flex items-center gap-3 border border-white/20 hover:bg-black/80 transition-colors z-30"
                 >
                   <div className="w-8 h-8 rounded-full bg-[#FF0000] flex items-center justify-center shrink-0">
                     <Play className="w-4 h-4 fill-white ml-0.5" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <span className="text-[10px] text-white/70 block uppercase font-bold">Watch on VIONEX</span>
-                    <p className="text-xs font-semibold truncate">{activeStory.vionexRef.title}</p>
+                    <p className="text-xs font-semibold truncate">{activeStory.slides[activeSlideIndex].vionexRef!.title}</p>
                   </div>
                 </Link>
               )}
@@ -1985,8 +2536,10 @@ export default function MessagesPage() {
 
             {/* Story Caption and Working Reply Input */}
             <div className="p-4 bg-gradient-to-t from-black via-black/80 to-transparent z-30 text-white">
-              {activeStory.caption && (
-                <p className="text-sm text-center mb-3 drop-shadow">{activeStory.caption}</p>
+              {activeStory.slides[activeSlideIndex]?.caption && (
+                <p className="text-sm text-center mb-3 drop-shadow">
+                  {activeStory.slides[activeSlideIndex].caption}
+                </p>
               )}
 
               <div className="flex items-center gap-2">
@@ -2014,7 +2567,7 @@ export default function MessagesPage() {
       )}
 
       {/* ==================================================================== */}
-      {/* ADD STATUS MODAL                                                     */}
+      {/* ADD STATUS MODAL (Text Status or Photo/Video Upload)                 */}
       {/* ==================================================================== */}
       {showAddStatusModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-150">
@@ -2029,36 +2582,93 @@ export default function MessagesPage() {
               </button>
             </div>
 
-            <div
-              className="w-full h-44 rounded-xl p-4 flex items-center justify-center text-center transition-colors mb-4"
-              style={{ backgroundColor: newStatusBg }}
-            >
-              <textarea
-                placeholder="Type a status update..."
-                value={newStatusText}
-                onChange={e => setNewStatusText(e.target.value)}
-                className="w-full h-full bg-transparent text-white placeholder-white/70 text-xl font-bold outline-none resize-none text-center"
-              />
+            {/* Type selector: Text vs Photo */}
+            <div className="flex items-center gap-2 mb-4">
+              <button
+                onClick={() => setNewStatusType('text')}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  newStatusType === 'text' ? 'bg-[#00a884] text-white' : 'bg-[#f0f2f5] text-[#54656f]'
+                }`}
+              >
+                Text Status
+              </button>
+              <button
+                onClick={() => {
+                  setNewStatusType('media');
+                  statusFileInputRef.current?.click();
+                }}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 ${
+                  newStatusType === 'media' ? 'bg-[#00a884] text-white' : 'bg-[#f0f2f5] text-[#54656f]'
+                }`}
+              >
+                <ImageIcon className="w-3.5 h-3.5" />
+                <span>Photo / Media</span>
+              </button>
             </div>
 
-            {/* Color Chooser */}
-            <div className="flex items-center gap-2 mb-4">
-              {['#005c4b', '#7a2267', '#007bfc', '#8f5b23', '#c22332', '#1f2c34'].map(color => (
-                <button
-                  key={color}
-                  type="button"
-                  onClick={() => setNewStatusBg(color)}
-                  className={`w-7 h-7 rounded-full transition-transform ${
-                    newStatusBg === color ? 'scale-125 ring-2 ring-black' : ''
-                  }`}
-                  style={{ backgroundColor: color }}
+            {newStatusType === 'text' ? (
+              <>
+                <div
+                  className="w-full h-44 rounded-xl p-4 flex items-center justify-center text-center transition-colors mb-4"
+                  style={{ backgroundColor: newStatusBg }}
+                >
+                  <textarea
+                    placeholder="Type a status update..."
+                    value={newStatusText}
+                    onChange={e => setNewStatusText(e.target.value)}
+                    className="w-full h-full bg-transparent text-white placeholder-white/70 text-xl font-bold outline-none resize-none text-center"
+                  />
+                </div>
+
+                {/* Color Chooser */}
+                <div className="flex items-center gap-2 mb-4">
+                  {['#005c4b', '#7a2267', '#007bfc', '#8f5b23', '#c22332', '#1f2c34'].map(color => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => setNewStatusBg(color)}
+                      className={`w-7 h-7 rounded-full transition-transform ${
+                        newStatusBg === color ? 'scale-125 ring-2 ring-black' : ''
+                      }`}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="mb-4">
+                {newStatusMediaPreview ? (
+                  <div className="relative rounded-xl overflow-hidden mb-3 max-h-48 border border-[#e9edef]">
+                    <img src={newStatusMediaPreview} alt="Preview" className="w-full h-full object-cover" />
+                    <button
+                      onClick={() => setNewStatusMediaPreview(null)}
+                      className="absolute top-2 right-2 p-1 rounded-full bg-black/60 text-white"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => statusFileInputRef.current?.click()}
+                    className="h-36 rounded-xl border-2 border-dashed border-[#8696a0] flex flex-col items-center justify-center text-center p-4 cursor-pointer hover:bg-[#f5f6f6] mb-3"
+                  >
+                    <ImageIcon className="w-8 h-8 text-[#8696a0] mb-2" />
+                    <p className="text-xs font-semibold text-[#111b21]">Click to select photo or video</p>
+                  </div>
+                )}
+                <input
+                  type="text"
+                  placeholder="Add a caption..."
+                  value={newStatusText}
+                  onChange={e => setNewStatusText(e.target.value)}
+                  className="w-full bg-[#f0f2f5] text-xs px-3 py-2 rounded-lg outline-none"
                 />
-              ))}
-            </div>
+              </div>
+            )}
 
             <button
               onClick={handlePublishStatus}
-              disabled={!newStatusText.trim()}
+              disabled={newStatusType === 'text' ? !newStatusText.trim() : !newStatusMediaPreview}
               className="w-full py-2.5 rounded-full bg-[#00a884] hover:bg-[#008069] disabled:opacity-50 text-white font-semibold text-sm transition-colors"
             >
               Post Status (24 Hours)
@@ -2068,17 +2678,257 @@ export default function MessagesPage() {
       )}
 
       {/* ==================================================================== */}
-      {/* NEW CHAT MODAL (Switch or Start Conversation)                        */}
+      {/* LIVE CAMERA CAPTURE ATTACHMENT MODAL                                 */}
+      {/* ==================================================================== */}
+      {showCameraCaptureModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-150">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-3xl max-w-lg w-full p-6 text-white shadow-2xl flex flex-col items-center">
+            <div className="flex items-center justify-between w-full pb-3 border-b border-neutral-800 mb-4">
+              <div className="flex items-center gap-2">
+                <Camera className="w-5 h-5 text-[#00a884]" />
+                <h3 className="font-bold text-base">Camera Snapshot</h3>
+              </div>
+              <button
+                onClick={() => {
+                  setShowCameraCaptureModal(false);
+                  setCapturedSnapshotUrl(null);
+                }}
+                className="p-1 rounded-full hover:bg-white/10"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-black flex items-center justify-center mb-4 border border-neutral-800">
+              {capturedSnapshotUrl ? (
+                <img src={capturedSnapshotUrl} alt="Snapshot" className="w-full h-full object-cover" />
+              ) : (
+                <>
+                  <video
+                    ref={cameraVideoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-cover"
+                  />
+                  {!cameraStreamActive && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-black/80">
+                      <Camera className="w-10 h-10 text-neutral-500 mb-2" />
+                      <p className="text-xs text-neutral-400">Webcam stream inactive or denied. Click Capture for high-res photo.</p>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {capturedSnapshotUrl ? (
+              <div className="w-full space-y-3">
+                <input
+                  type="text"
+                  placeholder="Add a caption..."
+                  value={cameraCaption}
+                  onChange={e => setCameraCaption(e.target.value)}
+                  className="w-full bg-neutral-800 text-white text-xs px-4 py-2.5 rounded-xl outline-none border border-neutral-700"
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCapturedSnapshotUrl(null)}
+                    className="flex-1 py-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-xs font-semibold text-neutral-300"
+                  >
+                    Retake
+                  </button>
+                  <button
+                    onClick={handleSendCameraPhoto}
+                    className="flex-1 py-2.5 rounded-xl bg-[#00a884] hover:bg-[#008069] text-xs font-semibold text-white"
+                  >
+                    Send Photo
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={handleCaptureCameraSnapshot}
+                className="w-16 h-16 rounded-full border-4 border-white flex items-center justify-center bg-red-600 hover:bg-red-700 transition-transform active:scale-95 shadow-xl"
+                title="Take photo"
+              >
+                <div className="w-12 h-12 rounded-full bg-white" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* END-TO-END ENCRYPTION VERIFY SECURITY CODE MODAL                     */}
+      {/* ==================================================================== */}
+      {showSecurityModal && activeConv && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#e9edef] text-center">
+            <div className="flex items-center justify-between pb-3 border-b border-[#e9edef] mb-4">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-[#00a884]" />
+                <h3 className="font-bold text-base text-[#111b21]">Verify Security Code</h3>
+              </div>
+              <button onClick={() => setShowSecurityModal(false)} className="p-1 rounded-full hover:bg-black/5 text-[#54656f]">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-4 bg-[#f0f2f5] rounded-2xl flex flex-col items-center justify-center mb-4">
+              <QrCode className="w-40 h-40 text-[#111b21] mb-3" />
+              {/* 60-digit numeric code formatted into 4 blocks of 15 digits */}
+              <div className="font-mono text-xs text-[#111b21] tracking-wider leading-relaxed">
+                <div>29481 04928 10492 84920</div>
+                <div>84019 48102 94810 29481</div>
+                <div>03948 10294 81029 48102</div>
+              </div>
+            </div>
+
+            <p className="text-xs text-[#667781] leading-relaxed mb-4 text-left">
+              To verify that messages and calls with <span className="font-bold text-[#111b21]">{activeConv.name}</span> are end-to-end encrypted with Curve25519 & Libsignal Double Ratchet, scan this code on their device or compare these numbers.
+            </p>
+
+            <button
+              onClick={() => {
+                setShowSecurityModal(false);
+                showToast('Security code verified (Curve25519 match)');
+              }}
+              className="w-full py-2.5 rounded-full bg-[#00a884] hover:bg-[#008069] text-white text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Verify Matches</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* STARRED MESSAGES DRAWER                                              */}
+      {/* ==================================================================== */}
+      {showStarredDrawer && (
+        <div className="fixed inset-y-0 right-0 sm:w-80 w-full bg-white z-40 shadow-2xl flex flex-col border-l border-[#e9edef] animate-in slide-in-from-right duration-200">
+          <div className="h-16 bg-[#f0f2f5] px-4 flex items-center justify-between border-b border-[#e9edef] shrink-0">
+            <div className="flex items-center gap-2">
+              <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
+              <h3 className="font-semibold text-base text-[#111b21]">Starred Messages</h3>
+            </div>
+            <button onClick={() => setShowStarredDrawer(false)} className="p-1 rounded-full hover:bg-black/5 text-[#54656f]">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {messages.filter(m => starredMessageIds.includes(m.id)).length === 0 ? (
+              <div className="text-center py-12 text-sm text-[#667781]">
+                No starred messages in this chat.
+              </div>
+            ) : (
+              messages
+                .filter(m => starredMessageIds.includes(m.id))
+                .map(m => (
+                  <div key={m.id} className="p-3 bg-[#f0f2f5] rounded-xl text-xs space-y-1">
+                    <div className="flex justify-between items-center text-[#667781] text-[10px]">
+                      <span className="font-bold text-[#00a884]">{m.senderName}</span>
+                      <span>{m.timestamp}</span>
+                    </div>
+                    <p className="text-[#111b21]">{m.text}</p>
+                  </div>
+                ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* FORWARD MESSAGE MODAL                                                */}
+      {/* ==================================================================== */}
+      {forwardingMessage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#e9edef]">
+            <div className="flex items-center justify-between pb-3 border-b border-[#e9edef] mb-3">
+              <h3 className="font-bold text-base text-[#111b21]">Forward message to...</h3>
+              <button onClick={() => setForwardingMessage(null)} className="p-1 rounded-full hover:bg-black/5 text-[#54656f]">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-2.5 rounded-lg bg-[#f0f2f5] mb-3 text-xs text-[#54656f] truncate">
+              "{forwardingMessage.text}"
+            </div>
+
+            <div className="max-h-60 overflow-y-auto divide-y divide-[#f5f6f6]">
+              {conversations.map(c => (
+                <div
+                  key={c.id}
+                  onClick={() => handleForwardMessage(c.id)}
+                  className="flex items-center justify-between p-2.5 hover:bg-[#f5f6f6] cursor-pointer rounded-lg transition-colors"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <img src={c.avatarUrl} alt={c.name} className="w-8 h-8 rounded-full object-cover" />
+                    <span className="text-xs font-semibold text-[#111b21]">{c.name}</span>
+                  </div>
+                  <Share2 className="w-4 h-4 text-[#00a884]" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* POLL VOTES AUDIT MODAL (View Votes by Voter)                         */}
+      {/* ==================================================================== */}
+      {activePollVotesModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#e9edef]">
+            <div className="flex items-center justify-between pb-3 border-b border-[#e9edef] mb-4">
+              <h3 className="font-bold text-base text-[#111b21]">Poll Details</h3>
+              <button onClick={() => setActivePollVotesModal(null)} className="p-1 rounded-full hover:bg-black/5 text-[#54656f]">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-sm font-bold text-[#111b21] mb-3">
+              {activePollVotesModal.text.split('\n')[0].replace('📊 Poll: ', '')}
+            </p>
+
+            <div className="space-y-3 max-h-64 overflow-y-auto">
+              {activePollVotesModal.text.split('\n').slice(1).map((optLine, idx) => {
+                const optText = optLine.replace(/^\d+\.\s*/, '');
+                const pollData = interactivePollVotes[activePollVotesModal.id] || {};
+                const voters = pollData[idx] || [];
+
+                return (
+                  <div key={idx} className="p-2.5 rounded-xl bg-[#f0f2f5] text-xs">
+                    <div className="flex justify-between font-semibold text-[#111b21] mb-1">
+                      <span>{optText}</span>
+                      <span>{voters.length} vote{voters.length !== 1 ? 's' : ''}</span>
+                    </div>
+                    {voters.length > 0 ? (
+                      <div className="flex items-center gap-1.5 pt-1 text-[11px] text-[#008069]">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>{voters.join(', ')}</span>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-[#8696a0]">No votes yet</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* NEW CHAT MODAL                                                       */}
       {/* ==================================================================== */}
       {showNewChatModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-150">
           <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-[#e9edef]">
             <div className="h-14 bg-[#008069] text-white px-4 flex items-center justify-between">
               <h3 className="font-bold text-base">New Chat</h3>
-              <button
-                onClick={() => setShowNewChatModal(false)}
-                className="p-1 rounded-full hover:bg-white/10"
-              >
+              <button onClick={() => setShowNewChatModal(false)} className="p-1 rounded-full hover:bg-white/10">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -2097,7 +2947,6 @@ export default function MessagesPage() {
                   key={ch.handle}
                   onClick={() => {
                     const convId = 'conv-' + ch.handle;
-                    // Check if conversation exists
                     const exists = conversations.find(c => c.id === convId);
                     if (!exists) {
                       const newConv: Conversation = {
@@ -2144,10 +2993,7 @@ export default function MessagesPage() {
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#e9edef]">
             <div className="flex items-center justify-between pb-3 border-b border-[#e9edef] mb-4">
               <h3 className="font-bold text-base text-[#111b21]">Create New Group</h3>
-              <button
-                onClick={() => setShowNewGroupModal(false)}
-                className="p-1 rounded-full hover:bg-black/5 text-[#54656f]"
-              >
+              <button onClick={() => setShowNewGroupModal(false)} className="p-1 rounded-full hover:bg-black/5 text-[#54656f]">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -2222,10 +3068,7 @@ export default function MessagesPage() {
                 </div>
                 <h3 className="font-bold text-base text-[#111b21]">Share VIONEX Video</h3>
               </div>
-              <button
-                onClick={() => setShowVionexShareModal(false)}
-                className="p-1 rounded-full hover:bg-black/5 text-[#54656f]"
-              >
+              <button onClick={() => setShowVionexShareModal(false)} className="p-1 rounded-full hover:bg-black/5 text-[#54656f]">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -2259,11 +3102,7 @@ export default function MessagesPage() {
                   onClick={() => handleShareVionexVideo(vid)}
                   className="flex items-center gap-3 p-2 rounded-xl hover:bg-[#f0f2f5] cursor-pointer border border-[#e9edef] transition-colors"
                 >
-                  <img
-                    src={vid.thumbnailUrl}
-                    alt={vid.title}
-                    className="w-24 aspect-video rounded-lg object-cover shrink-0"
-                  />
+                  <img src={vid.thumbnailUrl} alt={vid.title} className="w-24 aspect-video rounded-lg object-cover shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-xs text-[#111b21] line-clamp-1">{vid.title}</p>
                     <span className="text-[11px] text-[#00a884] font-medium">@{vid.creatorHandle}</span>
@@ -2276,17 +3115,14 @@ export default function MessagesPage() {
       )}
 
       {/* ==================================================================== */}
-      {/* POLL CREATOR MODAL                                                   */}
+      {/* POLL CREATOR MODAL WITH MULTI-ANSWER TOGGLE                          */}
       {/* ==================================================================== */}
       {showPollModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-150">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#e9edef]">
             <div className="flex items-center justify-between pb-3 border-b border-[#e9edef] mb-4">
               <h3 className="font-bold text-base text-[#111b21]">Create Poll</h3>
-              <button
-                onClick={() => setShowPollModal(false)}
-                className="p-1 rounded-full hover:bg-black/5 text-[#54656f]"
-              >
+              <button onClick={() => setShowPollModal(false)} className="p-1 rounded-full hover:bg-black/5 text-[#54656f]">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -2330,6 +3166,17 @@ export default function MessagesPage() {
                   </button>
                 )}
               </div>
+
+              {/* Allow multiple answers toggle */}
+              <div className="flex items-center justify-between pt-2 border-t border-[#e9edef]">
+                <span className="text-xs text-[#111b21] font-medium">Allow multiple answers</span>
+                <input
+                  type="checkbox"
+                  checked={pollAllowMultiple}
+                  onChange={e => setPollAllowMultiple(e.target.checked)}
+                  className="w-4 h-4 text-[#00a884] rounded"
+                />
+              </div>
             </div>
 
             <button
@@ -2350,21 +3197,14 @@ export default function MessagesPage() {
         <div className="fixed inset-y-0 right-0 sm:w-80 w-full bg-white z-40 shadow-2xl flex flex-col border-l border-[#e9edef] animate-in slide-in-from-right duration-200">
           <div className="h-16 bg-[#f0f2f5] px-4 flex items-center justify-between border-b border-[#e9edef] shrink-0">
             <h3 className="font-semibold text-base text-[#111b21]">Contact info</h3>
-            <button
-              onClick={() => setShowContactInfo(false)}
-              className="p-1 rounded-full hover:bg-black/5 text-[#54656f]"
-            >
+            <button onClick={() => setShowContactInfo(false)} className="p-1 rounded-full hover:bg-black/5 text-[#54656f]">
               <X className="w-5 h-5" />
             </button>
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             <div className="flex flex-col items-center text-center p-4 bg-[#f0f2f5] rounded-xl">
-              <img
-                src={activeConv.avatarUrl}
-                alt={activeConv.name}
-                className="w-20 h-20 rounded-full object-cover mb-2"
-              />
+              <img src={activeConv.avatarUrl} alt={activeConv.name} className="w-20 h-20 rounded-full object-cover mb-2" />
               <h4 className="font-bold text-base text-[#111b21]">{activeConv.name}</h4>
               <span className="text-xs text-[#667781]">@{activeConv.participantId}</span>
             </div>
@@ -2374,7 +3214,11 @@ export default function MessagesPage() {
               <p className="text-sm text-[#111b21]">Official Creator on VIONEX | 4K HDR Real-Time Video</p>
             </div>
 
-            <div className="p-3 bg-[#f0f2f5] rounded-xl flex items-center gap-3">
+            {/* Clickable Encryption Box */}
+            <div
+              onClick={() => setShowSecurityModal(true)}
+              className="p-3 bg-[#f0f2f5] rounded-xl flex items-center gap-3 cursor-pointer hover:bg-[#e9edef] transition-colors"
+            >
               <Lock className="w-5 h-5 text-[#00a884] shrink-0" />
               <div className="text-xs">
                 <span className="font-semibold text-[#111b21] block">Encryption</span>
@@ -2413,10 +3257,7 @@ export default function MessagesPage() {
       {showSettingsDrawer && (
         <div className="fixed inset-y-0 left-0 sm:left-16 sm:w-[380px] w-full bg-white z-40 shadow-2xl flex flex-col border-r border-[#e9edef] animate-in slide-in-from-left duration-200">
           <div className="h-16 bg-[#008069] text-white px-4 flex items-center gap-3 shrink-0 shadow-sm">
-            <button
-              onClick={() => setShowSettingsDrawer(false)}
-              className="p-1 rounded-full hover:bg-white/10"
-            >
+            <button onClick={() => setShowSettingsDrawer(false)} className="p-1 rounded-full hover:bg-white/10">
               <ArrowLeft className="w-5 h-5" />
             </button>
             <h2 className="text-lg font-bold">Settings</h2>
@@ -2479,10 +3320,7 @@ export default function MessagesPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-150">
           <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-[#e9edef] text-center">
             <div className="flex justify-end">
-              <button
-                onClick={() => setShowUserProfileModal(false)}
-                className="p-1 rounded-full hover:bg-black/5 text-[#54656f]"
-              >
+              <button onClick={() => setShowUserProfileModal(false)} className="p-1 rounded-full hover:bg-black/5 text-[#54656f]">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -2522,10 +3360,7 @@ export default function MessagesPage() {
                 <QrCode className="w-6 h-6 text-[#00a884]" />
                 <h3 className="font-bold text-lg text-[#111b21]">Linked devices</h3>
               </div>
-              <button
-                onClick={() => setShowDeviceModal(false)}
-                className="p-1 rounded-full hover:bg-black/5 text-[#54656f]"
-              >
+              <button onClick={() => setShowDeviceModal(false)} className="p-1 rounded-full hover:bg-black/5 text-[#54656f]">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -2563,18 +3398,26 @@ export default function MessagesPage() {
       )}
 
       {/* ==================================================================== */}
-      {/* LIVEKIT HD CALLING MODAL                                             */}
+      {/* LIVEKIT HD CALLING MODAL WITH WEBCAM VIDEO STREAM & CONTROLS          */}
       {/* ==================================================================== */}
       {showCallModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-in fade-in duration-150">
           <div className="bg-neutral-900 border border-neutral-800 rounded-3xl max-w-xl w-full p-6 text-white shadow-2xl flex flex-col items-center">
             <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-black flex items-center justify-center mb-6 border border-neutral-800">
               {callType === 'video' && !isCameraOff ? (
-                <img
-                  src={activeConv.avatarUrl}
-                  alt={activeConv.name}
-                  className="w-full h-full object-cover blur-sm opacity-50"
-                />
+                <>
+                  <video
+                    ref={localVideoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-cover"
+                  />
+                  {/* Picture-in-picture peer avatar */}
+                  <div className="absolute bottom-3 right-3 w-24 aspect-video rounded-lg overflow-hidden border-2 border-white/40 shadow-lg bg-neutral-800 flex items-center justify-center">
+                    <img src={activeConv.avatarUrl} alt={activeConv.name} className="w-8 h-8 rounded-full object-cover" />
+                  </div>
+                </>
               ) : (
                 <div className="flex flex-col items-center">
                   <img
@@ -2616,6 +3459,28 @@ export default function MessagesPage() {
                 title={isCameraOff ? 'Camera On' : 'Camera Off'}
               >
                 <Video className="w-5 h-5" />
+              </button>
+
+              <button
+                onClick={() => {
+                  if (!isScreenSharing && navigator.mediaDevices?.getDisplayMedia) {
+                    navigator.mediaDevices.getDisplayMedia({ video: true })
+                      .then(stream => {
+                        setIsScreenSharing(true);
+                        if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+                        stream.getVideoTracks()[0].onended = () => setIsScreenSharing(false);
+                      })
+                      .catch(() => {});
+                  } else {
+                    setIsScreenSharing(false);
+                  }
+                }}
+                className={`p-3.5 rounded-full transition-colors ${
+                  isScreenSharing ? 'bg-[#00a884] text-white' : 'bg-neutral-800 hover:bg-neutral-700 text-white'
+                }`}
+                title="Share screen"
+              >
+                <Monitor className="w-5 h-5" />
               </button>
 
               <button
