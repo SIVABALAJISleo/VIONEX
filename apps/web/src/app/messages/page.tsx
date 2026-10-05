@@ -56,6 +56,8 @@ import {
   CheckSquare,
   Square,
   Download,
+  Upload,
+  Edit3,
   Share2,
   Info,
   ChevronRight,
@@ -343,6 +345,51 @@ class WhatsAppAudioSynth {
 const audioSynth = new WhatsAppAudioSynth();
 
 // ============================================================================
+// DYNAMIC REAL-TIME TIMESTAMPS & 24H EPHEMERAL STATUS HELPERS
+// ============================================================================
+function getDynamicTime(hoursAgo = 0, minutesAgo = 0): string {
+  const d = new Date(Date.now() - (hoursAgo * 3600000 + minutesAgo * 60000));
+  const h = d.getHours().toString().padStart(2, '0');
+  const m = d.getMinutes().toString().padStart(2, '0');
+  return `${h}:${m}`;
+}
+
+function formatMessageBubbleTime(timestamp: string): string {
+  if (!timestamp) return getDynamicTime();
+  // If already in HH:mm or H:mm format (e.g. 22:15, 9:04)
+  if (/^\d{1,2}:\d{2}(\s*(AM|PM))?$/i.test(timestamp.trim())) {
+    return timestamp.trim();
+  }
+  // If mock string like 'Yesterday', 'Oct 02', return realistic local time today
+  if (timestamp.toLowerCase().includes('yesterday') || timestamp.toLowerCase().includes('oct')) {
+    return getDynamicTime(1, 15);
+  }
+  // Try date parsing
+  const parsed = new Date(timestamp);
+  if (!isNaN(parsed.getTime())) {
+    const h = parsed.getHours().toString().padStart(2, '0');
+    const m = parsed.getMinutes().toString().padStart(2, '0');
+    return `${h}:${m}`;
+  }
+  return getDynamicTime();
+}
+
+function formatStatusTimeAgo(createdAt: number): string {
+  const diffMs = Math.max(0, Date.now() - createdAt);
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return 'Just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHours = Math.floor(diffMin / 60);
+  if (diffHours < 24) {
+    const d = new Date(createdAt);
+    const h = d.getHours().toString().padStart(2, '0');
+    const m = d.getMinutes().toString().padStart(2, '0');
+    return `Today, ${h}:${m}`;
+  }
+  return 'Yesterday';
+}
+
+// ============================================================================
 // CLEAN AUTHENTIC DATA FIXTURES (Guarantees zero fake test strings)
 // ============================================================================
 const CLEAN_OFFICIAL_CONVERSATIONS: Conversation[] = [
@@ -386,7 +433,7 @@ const CLEAN_OFFICIAL_CONVERSATIONS: Conversation[] = [
     unreadCount: 0,
     lastMessage: {
       text: 'The ocean trench acoustic telemetry is rendering in 1080p60 with zero buffer.',
-      timestamp: 'Yesterday',
+      timestamp: getDynamicTime(2, 45),
       state: 'READ'
     }
   },
@@ -400,7 +447,7 @@ const CLEAN_OFFICIAL_CONVERSATIONS: Conversation[] = [
     unreadCount: 2,
     lastMessage: {
       text: 'Synthwave radio chill beats live stream is online 24/7! 🎧',
-      timestamp: 'Yesterday',
+      timestamp: getDynamicTime(0, 5),
       state: 'DELIVERED'
     }
   },
@@ -415,7 +462,7 @@ const CLEAN_OFFICIAL_CONVERSATIONS: Conversation[] = [
     unreadCount: 0,
     lastMessage: {
       text: 'Blender Cycles open CGI master files uploaded to community topic.',
-      timestamp: 'Oct 02',
+      timestamp: getDynamicTime(4, 20),
       state: 'READ'
     }
   }
@@ -449,7 +496,7 @@ const CLEAN_OFFICIAL_MESSAGES: Record<string, ChatMessage[]> = {
       conversationId: 'conv-mkbhd',
       senderId: 'current-user',
       senderName: 'You',
-      senderAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=100',
+      senderAvatar: userProfile.avatarUrl,
       text: 'Yes! The dynamic range and aerial gimbals are unbelievable. Watching it right now in 1080p ABR with Web Audio boost.',
       isE2EE: true,
       state: 'READ',
@@ -502,7 +549,7 @@ const CLEAN_OFFICIAL_MESSAGES: Record<string, ChatMessage[]> = {
       text: 'The ocean trench acoustic telemetry is rendering in 1080p60 with zero buffer.',
       isE2EE: true,
       state: 'READ',
-      timestamp: 'Yesterday'
+      timestamp: getDynamicTime(2, 45)
     }
   ],
   'conv-lofigirl': [
@@ -524,7 +571,7 @@ const CLEAN_OFFICIAL_MESSAGES: Record<string, ChatMessage[]> = {
         creatorHandle: 'lofigirl',
         embedRoute: '/watch/vid-demo-008'
       },
-      timestamp: 'Yesterday'
+      timestamp: getDynamicTime(0, 5)
     }
   ],
   'conv-kurzgesagt': [
@@ -538,7 +585,7 @@ const CLEAN_OFFICIAL_MESSAGES: Record<string, ChatMessage[]> = {
       text: 'Blender Cycles open CGI master files uploaded to community topic.',
       isE2EE: true,
       state: 'READ',
-      timestamp: 'Oct 02'
+      timestamp: getDynamicTime(4, 20)
     }
   ]
 };
@@ -575,6 +622,7 @@ interface StatusStory {
   authorName: string;
   authorAvatar: string;
   isVerified: boolean;
+  createdAt: number;
   timeAgo: string;
   slides: StatusSlide[];
   hasViewed: boolean;
@@ -766,6 +814,19 @@ export default function MessagesPage() {
   const [isLinkingNewDevice, setIsLinkingNewDevice] = useState(false);
   const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
   const [showUserProfileModal, setShowUserProfileModal] = useState(false);
+  // User Profile Customization State (Photo, Name, About)
+  const [userProfile, setUserProfile] = useState<{ name: string; about: string; avatarUrl: string }>({
+    name: 'Alex Rivera',
+    about: 'Building the future of video & real-time messaging on VIONEX 🚀',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200'
+  });
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState('');
+  const [isEditingAbout, setIsEditingAbout] = useState(false);
+  const [editedAbout, setEditedAbout] = useState('');
+  const [isCaptureForProfile, setIsCaptureForProfile] = useState(false);
+  const profileFileInputRef = useRef<HTMLInputElement>(null);
+
 
   // Security Verification Modal
   const [showSecurityModal, setShowSecurityModal] = useState(false);
@@ -872,6 +933,15 @@ export default function MessagesPage() {
       } else {
         setConversations(CLEAN_OFFICIAL_CONVERSATIONS);
         saveConversations(CLEAN_OFFICIAL_CONVERSATIONS);
+      }
+
+      // Load custom profile
+      const storedProfile = localStorage.getItem('vionex_user_profile');
+      if (storedProfile) {
+        try {
+          const parsed = JSON.parse(storedProfile);
+          if (parsed.avatarUrl) setUserProfile(parsed);
+        } catch {}
       }
 
       const storedStories = localStorage.getItem('vionex_user_stories');
@@ -1020,6 +1090,46 @@ export default function MessagesPage() {
     setMessages(CLEAN_OFFICIAL_MESSAGES[activeConvId] || []);
     setShowTopMenu(false);
     showToast('Clean official chats restored');
+  };
+
+
+  const updateUserProfile = (patch: Partial<{ name: string; about: string; avatarUrl: string }>) => {
+    setUserProfile(prev => {
+      const updated = { ...prev, ...patch };
+      try {
+        localStorage.setItem('vionex_user_profile', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
+
+  const handleProfilePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        updateUserProfile({ avatarUrl: base64 });
+        showToast('Profile photo updated successfully!');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveName = () => {
+    if (editedName.trim()) {
+      updateUserProfile({ name: editedName.trim() });
+      setIsEditingName(false);
+      showToast('Name updated');
+    }
+  };
+
+  const handleSaveAbout = () => {
+    if (editedAbout.trim()) {
+      updateUserProfile({ about: editedAbout.trim() });
+      setIsEditingAbout(false);
+      showToast('About updated');
+    }
   };
 
   // Send message with real-time audio pop, tick progression, and peer reply
@@ -1317,6 +1427,14 @@ export default function MessagesPage() {
 
   const handleSendCameraPhoto = () => {
     if (!capturedSnapshotUrl) return;
+    if (isCaptureForProfile) {
+      updateUserProfile({ avatarUrl: capturedSnapshotUrl });
+      setIsCaptureForProfile(false);
+      setShowCameraCaptureModal(false);
+      setCapturedSnapshotUrl(null);
+      showToast('Profile photo updated from camera!');
+      return;
+    }
     const sent = sendChatMessage(activeConvId, cameraCaption ? `📷 ${cameraCaption}` : '📷 Photo');
     sent.attachments = [{
       name: 'camera_capture.jpg',
@@ -2401,7 +2519,7 @@ export default function MessagesPage() {
 
                     <div className="flex items-center justify-end gap-1 mt-1 text-[11px] text-[#667781] select-none float-right ml-3 -mb-1">
                       {isStarred && <Star className="w-3 h-3 text-amber-500 fill-amber-500" />}
-                      <span>{m.timestamp}</span>
+                      <span>{formatMessageBubbleTime(m.timestamp)}</span>
                       {isMe && (
                         <span>
                           {m.state === 'READ' && <CheckCheck className="w-4 h-4 text-[#53bdeb]" />}
@@ -2826,26 +2944,56 @@ export default function MessagesPage() {
           </div>
 
           <div className="flex-1 overflow-y-auto">
-            <div
-              onClick={() => setShowAddStatusModal(true)}
-              className="p-4 bg-white flex items-center justify-between border-b border-[#e9edef] cursor-pointer hover:bg-[#f5f6f6] transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <div className="relative">
+            {/* MY STATUS CARD (24h Ephemeral Status Engine) */}
+            <div className="p-3.5 bg-white flex items-center justify-between border-b border-[#e9edef] hover:bg-[#f5f6f6] transition-colors">
+              <div
+                className="flex items-center gap-3 flex-1 cursor-pointer"
+                onClick={() => {
+                  const myActive = stories.find(s => s.authorId === 'current-user');
+                  if (myActive) {
+                    setActiveStory(myActive);
+                    setActiveSlideIndex(0);
+                    setStoryProgress(0);
+                  } else {
+                    setShowAddStatusModal(true);
+                  }
+                }}
+              >
+                <div className="relative shrink-0">
                   <img
-                    src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=100"
+                    src={userProfile.avatarUrl}
                     alt="My Status"
-                    className="w-12 h-12 rounded-full object-cover"
+                    className={`w-12 h-12 rounded-full object-cover p-0.5 ${
+                      stories.some(s => s.authorId === 'current-user') ? 'ring-2 ring-[#00a884]' : 'ring-2 ring-black/10'
+                    }`}
                   />
-                  <div className="absolute bottom-0 right-0 w-4 h-4 bg-[#00a884] text-white rounded-full flex items-center justify-center ring-2 ring-white">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowAddStatusModal(true);
+                    }}
+                    className="absolute bottom-0 right-0 w-4 h-4 bg-[#00a884] text-white rounded-full flex items-center justify-center ring-2 ring-white hover:bg-[#008069] transition-transform active:scale-95 shadow-sm"
+                    title="Add status update"
+                  >
                     <Plus className="w-3 h-3" />
-                  </div>
+                  </button>
                 </div>
                 <div>
                   <p className="font-semibold text-sm text-[#111b21]">My status</p>
-                  <span className="text-xs text-[#667781]">Tap to add status update</span>
+                  <span className="text-xs text-[#667781]">
+                    {stories.find(s => s.authorId === 'current-user')
+                      ? `${formatStatusTimeAgo(stories.find(s => s.authorId === 'current-user')!.createdAt)} · Expires in ${Math.max(1, Math.round((24 * 3600 * 1000 - (Date.now() - (stories.find(s => s.authorId === 'current-user')!.createdAt || Date.now()))) / 3600000))}h`
+                      : 'No updates · Tap to add status'}
+                  </span>
                 </div>
               </div>
+              <button
+                onClick={() => setShowAddStatusModal(true)}
+                className="p-2 rounded-full hover:bg-black/5 text-[#54656f]"
+                title="Add status update"
+              >
+                <Camera className="w-5 h-5 text-[#00a884]" />
+              </button>
             </div>
 
             <div className="px-4 py-3 text-xs font-bold text-[#008069] uppercase tracking-wider">
@@ -3414,8 +3562,8 @@ export default function MessagesPage() {
                   className="p-4 flex items-center gap-3 cursor-pointer hover:bg-[#f5f6f6] transition-colors"
                 >
                   <img
-                    src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=100"
-                    alt="Profile"
+                    src={userProfile.avatarUrl}
+                    alt={userProfile.name}
                     className="w-14 h-14 rounded-full object-cover"
                   />
                   <div>
@@ -3752,29 +3900,180 @@ export default function MessagesPage() {
       {showUserProfileModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-150">
           <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-[#e9edef] text-center">
-            <div className="flex justify-end">
-              <button onClick={() => setShowUserProfileModal(false)} className="p-1 rounded-full hover:bg-black/5 text-[#54656f]">
+            {/* Hidden file input for photo upload */}
+            <input
+              type="file"
+              ref={profileFileInputRef}
+              accept="image/*"
+              onChange={handleProfilePhotoUpload}
+              className="hidden"
+            />
+
+            <div className="flex items-center justify-between pb-3 border-b border-[#e9edef] mb-4">
+              <h3 className="font-bold text-base text-[#111b21]">Profile</h3>
+              <button
+                onClick={() => setShowUserProfileModal(false)}
+                className="p-1 rounded-full hover:bg-black/5 text-[#54656f]"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <img
-              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200"
-              alt="Profile"
-              className="w-24 h-24 rounded-full object-cover mx-auto mb-3 ring-4 ring-[#00a884]/20"
-            />
-            <h3 className="font-bold text-lg text-[#111b21]">Alex Rivera</h3>
-            <span className="text-xs text-[#00a884] font-medium block mb-4">Official VIONEX Creator</span>
 
-            <div className="text-left bg-[#f0f2f5] p-3 rounded-xl mb-4 text-xs space-y-1.5">
-              <span className="text-[#54656f] block uppercase font-bold text-[10px]">Your Name</span>
-              <p className="font-semibold text-sm text-[#111b21]">Alex Rivera</p>
-              <span className="text-[#54656f] block uppercase font-bold text-[10px] pt-1">About</span>
-              <p className="text-[#111b21]">Building the future of video & real-time messaging on VIONEX</p>
+            {/* AVATAR WITH HOVER CAMERA & UPLOAD TRIGGER */}
+            <div className="relative w-28 h-28 mx-auto mb-3 group cursor-pointer">
+              <img
+                src={userProfile.avatarUrl}
+                alt={userProfile.name}
+                className="w-28 h-28 rounded-full object-cover ring-4 ring-[#00a884]/25 shadow-md"
+              />
+              <div
+                onClick={() => profileFileInputRef.current?.click()}
+                className="absolute inset-0 rounded-full bg-black/50 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <Camera className="w-6 h-6 mb-1" />
+                <span className="text-[10px] font-bold uppercase tracking-wider">Change</span>
+              </div>
+              <button
+                onClick={() => profileFileInputRef.current?.click()}
+                className="absolute bottom-0 right-0 p-2 rounded-full bg-[#00a884] text-white shadow-lg ring-2 ring-white hover:bg-[#008069] transition-transform active:scale-95"
+                title="Change profile photo"
+              >
+                <Camera className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* PHOTO ACTION BUTTONS */}
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <button
+                onClick={() => profileFileInputRef.current?.click()}
+                className="px-3 py-1.5 rounded-lg bg-[#f0f2f5] hover:bg-[#e9edef] text-xs font-semibold text-[#111b21] flex items-center gap-1.5 transition-colors"
+              >
+                <Upload className="w-3.5 h-3.5 text-[#00a884]" />
+                <span>Upload Photo</span>
+              </button>
+              <button
+                onClick={() => {
+                  setIsCaptureForProfile(true);
+                  setShowCameraCaptureModal(true);
+                }}
+                className="px-3 py-1.5 rounded-lg bg-[#f0f2f5] hover:bg-[#e9edef] text-xs font-semibold text-[#111b21] flex items-center gap-1.5 transition-colors"
+              >
+                <Camera className="w-3.5 h-3.5 text-[#00a884]" />
+                <span>Camera</span>
+              </button>
+              <button
+                onClick={() => {
+                  const defaultAvatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200';
+                  updateUserProfile({ avatarUrl: defaultAvatar });
+                  showToast('Photo reset');
+                }}
+                className="p-1.5 rounded-lg bg-[#f0f2f5] hover:bg-[#e9edef] text-[#ea0038] transition-colors"
+                title="Reset to default photo"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* NAME EDIT SECTION */}
+            <div className="bg-[#f0f2f5] p-3 rounded-xl mb-3 text-left">
+              <span className="text-[#54656f] block uppercase font-bold text-[10px] mb-1">Your Name</span>
+              {isEditingName ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={editedName}
+                    onChange={e => setEditedName(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') handleSaveName();
+                      if (e.key === 'Escape') setIsEditingName(false);
+                    }}
+                    autoFocus
+                    className="flex-1 bg-white border border-[#00a884] rounded-lg px-2.5 py-1 text-sm font-semibold text-[#111b21] outline-none"
+                  />
+                  <button
+                    onClick={handleSaveName}
+                    className="p-1 rounded-full text-[#00a884] hover:bg-black/5"
+                    title="Save"
+                  >
+                    <Check className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setIsEditingName(false)}
+                    className="p-1 rounded-full text-[#54656f] hover:bg-black/5"
+                    title="Cancel"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <p className="font-semibold text-sm text-[#111b21]">{userProfile.name}</p>
+                  <button
+                    onClick={() => {
+                      setEditedName(userProfile.name);
+                      setIsEditingName(true);
+                    }}
+                    className="p-1 rounded text-[#54656f] hover:text-[#00a884]"
+                    title="Edit name"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+              <span className="text-[10px] text-[#667781] block mt-1">This name will be visible to your VIONEX WhatsApp contacts.</span>
+            </div>
+
+            {/* ABOUT EDIT SECTION */}
+            <div className="bg-[#f0f2f5] p-3 rounded-xl mb-4 text-left">
+              <span className="text-[#54656f] block uppercase font-bold text-[10px] mb-1">About</span>
+              {isEditingAbout ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={editedAbout}
+                    onChange={e => setEditedAbout(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') handleSaveAbout();
+                      if (e.key === 'Escape') setIsEditingAbout(false);
+                    }}
+                    autoFocus
+                    className="flex-1 bg-white border border-[#00a884] rounded-lg px-2.5 py-1 text-sm text-[#111b21] outline-none"
+                  />
+                  <button
+                    onClick={handleSaveAbout}
+                    className="p-1 rounded-full text-[#00a884] hover:bg-black/5"
+                    title="Save"
+                  >
+                    <Check className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setIsEditingAbout(false)}
+                    className="p-1 rounded-full text-[#54656f] hover:bg-black/5"
+                    title="Cancel"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-[#111b21] truncate pr-2">{userProfile.about}</p>
+                  <button
+                    onClick={() => {
+                      setEditedAbout(userProfile.about);
+                      setIsEditingAbout(true);
+                    }}
+                    className="p-1 rounded text-[#54656f] hover:text-[#00a884]"
+                    title="Edit about"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
             </div>
 
             <button
               onClick={() => setShowUserProfileModal(false)}
-              className="w-full py-2 rounded-full bg-[#00a884] text-white text-xs font-semibold hover:bg-[#008069] transition-colors"
+              className="w-full py-2.5 rounded-full bg-[#00a884] text-white text-xs font-semibold hover:bg-[#008069] transition-colors"
             >
               Done
             </button>
@@ -3782,9 +4081,6 @@ export default function MessagesPage() {
         </div>
       )}
 
-      {/* ==================================================================== */}
-      {/* LINKED DEVICES MODAL                                                 */}
-      {/* ==================================================================== */}
       {showDeviceModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-150">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#e9edef]">
