@@ -344,6 +344,7 @@ class WhatsAppAudioSynth {
 
 const audioSynth = new WhatsAppAudioSynth();
 
+const DEFAULT_USER_AVATAR = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200';
 // ============================================================================
 // DYNAMIC REAL-TIME TIMESTAMPS & 24H EPHEMERAL STATUS HELPERS
 // ============================================================================
@@ -496,7 +497,7 @@ const CLEAN_OFFICIAL_MESSAGES: Record<string, ChatMessage[]> = {
       conversationId: 'conv-mkbhd',
       senderId: 'current-user',
       senderName: 'You',
-      senderAvatar: userProfile.avatarUrl,
+      senderAvatar: DEFAULT_USER_AVATAR,
       text: 'Yes! The dynamic range and aerial gimbals are unbelievable. Watching it right now in 1080p ABR with Web Audio boost.',
       isE2EE: true,
       state: 'READ',
@@ -1151,7 +1152,7 @@ export default function MessagesPage() {
       conversationId: activeConvId,
       senderId: 'current-user',
       senderName: 'You',
-      senderAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=100',
+      senderAvatar: userProfile.avatarUrl,
       text: messageText,
       isE2EE: true,
       state: 'SENT',
