@@ -85,26 +85,175 @@ import {
 import { AUTHENTIC_CHANNELS } from '@/lib/data';
 
 // ============================================================================
+// SELF-CONTAINED WAV AUDIO GENERATOR (Guarantees 100% audible sound anywhere)
+// ============================================================================
+function generateVoiceNoteWavBase64(durationSec = 5, sampleRate = 22050): string {
+  const numSamples = Math.floor(durationSec * sampleRate);
+  const buffer = new ArrayBuffer(44 + numSamples * 2);
+  const view = new DataView(buffer);
+
+  function writeString(offset: number, str: string) {
+    for (let i = 0; i < str.length; i++) {
+      view.setUint8(offset + i, str.charCodeAt(i));
+    }
+  }
+
+  writeString(0, 'RIFF');
+  view.setUint32(4, 36 + numSamples * 2, true);
+  writeString(8, 'WAVE');
+  writeString(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true); // PCM format
+  view.setUint16(22, 1, true); // 1 channel (mono)
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true); // Byte rate
+  view.setUint16(32, 2, true); // Block align
+  view.setUint16(34, 16, true); // 16 bits per sample
+  writeString(36, 'data');
+  view.setUint32(40, numSamples * 2, true);
+
+  for (let i = 0; i < numSamples; i++) {
+    const t = i / sampleRate;
+    // Human speech rhythm with natural syllable cadence & micro pauses
+    const syllableWave = Math.sin(t * 3.8 * Math.PI * 2);
+    const envelope = Math.max(0, syllableWave) * (0.8 + 0.2 * Math.sin(t * 1.2));
+    
+    // Fundamental voice pitch (human male/female speech cadence ~170-210Hz)
+    const pitch = 185 + 28 * Math.sin(t * 2.5);
+    const f0 = Math.sin(t * pitch * Math.PI * 2);
+    // Formant 1 (~720Hz vowel resonance)
+    const f1 = 0.5 * Math.sin(t * 720 * Math.PI * 2);
+    // Formant 2 (~1260Hz)
+    const f2 = 0.28 * Math.sin(t * 1260 * Math.PI * 2);
+    // Formant 3 (~2500Hz)
+    const f3 = 0.15 * Math.sin(t * 2500 * Math.PI * 2);
+
+    let sample = (f0 + f1 + f2 + f3) * envelope * 0.7;
+    sample = Math.max(-1, Math.min(1, sample));
+    const int16 = Math.floor(sample * 32767);
+    view.setInt16(44 + i * 2, int16, true);
+  }
+
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i += 8192) {
+    const chunk = bytes.subarray(i, Math.min(i + 8192, len));
+    binary += String.fromCharCode.apply(null, chunk as any);
+  }
+  return 'data:audio/wav;base64,' + (typeof btoa !== 'undefined' ? btoa(binary) : Buffer.from(binary, 'binary').toString('base64'));
+}
+
+// ============================================================================
 // WEB AUDIO SYNTHESIZER & REAL AUDIO ENGINE
 // ============================================================================
 class WhatsAppAudioSynth {
   private ctx: AudioContext | null = null;
 
-  private getContext() {
+  getContext(): AudioContext | null {
     if (!this.ctx && typeof window !== 'undefined') {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (AudioCtx) this.ctx = new AudioCtx();
     }
     if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume();
+      this.ctx.resume().catch(() => {});
     }
     return this.ctx;
+  }
+
+  resumeContext(): AudioContext | null {
+    const ctx = this.getContext();
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+    return ctx;
+  }
+
+  // Soft WhatsApp voice note start ping
+  playVoiceNoteStartTone() {
+    try {
+      const ctx = this.resumeContext();
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(540, ctx.currentTime);
+      gain.gain.setValueAtTime(0.25, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.09);
+    } catch {}
+  }
+
+  // Play vocal speech synthesis buffer through Web Audio destination (100% audible guaranteed)
+  playVocalSpeechBuffer(
+    durationSec = 5,
+    playbackRate = 1.0,
+    onProgress?: (pct: number) => void
+  ): () => void {
+    const ctx = this.resumeContext();
+    if (!ctx) return () => {};
+
+    const sampleRate = ctx.sampleRate || 44100;
+    const numSamples = Math.floor(durationSec * sampleRate);
+    const audioBuffer = ctx.createBuffer(1, numSamples, sampleRate);
+    const channelData = audioBuffer.getChannelData(0);
+
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const syllableWave = Math.sin(t * 3.8 * Math.PI * 2);
+      const envelope = Math.max(0, syllableWave) * (0.8 + 0.2 * Math.sin(t * 1.2));
+      const pitch = 185 + 28 * Math.sin(t * 2.5);
+      const f0 = Math.sin(t * pitch * Math.PI * 2);
+      const f1 = 0.5 * Math.sin(t * 720 * Math.PI * 2);
+      const f2 = 0.28 * Math.sin(t * 1260 * Math.PI * 2);
+      const f3 = 0.15 * Math.sin(t * 2500 * Math.PI * 2);
+      let sample = (f0 + f1 + f2 + f3) * envelope * 0.7;
+      channelData[i] = Math.max(-1, Math.min(1, sample));
+    }
+
+    const source = ctx.createBufferSource();
+    source.buffer = audioBuffer;
+    source.playbackRate.value = playbackRate;
+
+    const gainNode = ctx.createGain();
+    gainNode.gain.setValueAtTime(0.7, ctx.currentTime);
+
+    source.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    const startTime = ctx.currentTime;
+    source.start(startTime);
+
+    const effectiveDuration = durationSec / playbackRate;
+    const interval = setInterval(() => {
+      if (!ctx) {
+        clearInterval(interval);
+        return;
+      }
+      const elapsed = ctx.currentTime - startTime;
+      const progress = Math.min(100, (elapsed / effectiveDuration) * 100);
+      if (onProgress) onProgress(progress);
+      if (progress >= 100) {
+        clearInterval(interval);
+      }
+    }, 50);
+
+    return () => {
+      try {
+        clearInterval(interval);
+        source.stop();
+        source.disconnect();
+      } catch {}
+    };
   }
 
   // Authentic WhatsApp outgoing message pop
   playSend() {
     try {
-      const ctx = this.getContext();
+      const ctx = this.resumeContext();
       if (!ctx) return;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -123,7 +272,7 @@ class WhatsAppAudioSynth {
   // Authentic WhatsApp incoming message dual-chime
   playReceive() {
     try {
-      const ctx = this.getContext();
+      const ctx = this.resumeContext();
       if (!ctx) return;
       const now = ctx.currentTime;
       const osc1 = ctx.createOscillator();
@@ -153,7 +302,7 @@ class WhatsAppAudioSynth {
   // WebRTC dialing ringtone
   playDialTone() {
     try {
-      const ctx = this.getContext();
+      const ctx = this.resumeContext();
       if (!ctx) return;
       const osc1 = ctx.createOscillator();
       const osc2 = ctx.createOscillator();
@@ -175,13 +324,13 @@ class WhatsAppAudioSynth {
   // Voice note speech simulation beep
   playVoiceNoteTone(pitch = 300) {
     try {
-      const ctx = this.getContext();
+      const ctx = this.resumeContext();
       if (!ctx) return;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(pitch, ctx.currentTime);
-      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.setValueAtTime(0.25, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
       osc.connect(gain);
       gain.connect(ctx.destination);
@@ -677,6 +826,7 @@ export default function MessagesPage() {
   const [voicePlaybackProgress, setVoicePlaybackProgress] = useState(0);
   const [voicePlaybackSpeed, setVoicePlaybackSpeed] = useState<1 | 1.5 | 2>(1);
   const activeAudioPlayerRef = useRef<HTMLAudioElement | null>(null);
+  const stopAudioFnRef = useRef<(() => void) | null>(null);
 
   // Replying state
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
@@ -2024,7 +2174,7 @@ export default function MessagesPage() {
 
             {displayedMessages.map(m => {
               const isMe = m.senderId === 'current-user';
-              const isVoiceNote = m.text.startsWith('🎤 Voice message');
+              const isVoiceNote = m.text.includes('Voice message') || (m.attachments && m.attachments.some(a => a.type.startsWith('audio/')));
               const isPoll = m.text.startsWith('📊 Poll:');
               const isSelected = selectedMessageIds.includes(m.id);
               const isStarred = starredMessageIds.includes(m.id);
@@ -2173,7 +2323,7 @@ export default function MessagesPage() {
                             ))}
                           </div>
                           <div className="flex justify-between text-[10px] text-[#667781] mt-0.5">
-                            <span>{playingVoiceNoteId === m.id ? `0:0${Math.floor(voicePlaybackProgress / 20)}` : '0:00'}</span>
+                            <span>{playingVoiceNoteId === m.id ? `0:0${Math.min(5, Math.max(0, Math.floor((voicePlaybackProgress / 100) * 5)))}` : '0:00'}</span>
                             <span>0:05</span>
                           </div>
                         </div>
