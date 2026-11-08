@@ -25,6 +25,19 @@ export interface VideoItem {
   category: string;
   tags: string[];
   commentsCount: number;
+  contentType?: string;
+  level?: string;
+  shelfLife?: string;
+  whyCommunity?: string;
+  communityScore?: number;
+  pullQuote?: {
+    text: string;
+    author?: string;
+    year?: string;
+  };
+  recommendationReason?: string;
+  taxonomyAreaId?: string;
+  taxonomyCategoryId?: string;
 }
 
 export interface ShortItem {

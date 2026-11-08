@@ -89,7 +89,36 @@ export async function videoRoutes(app: FastifyInstance) {
     return reply.send({ success: true, message: 'Upload completed and queued for processing', videoId: id });
   });
 
-  // 4. Get video details by ID
+  // 4. External YouTube Metadata & Thumbnail Extraction Helper (Zero API Quota Cost)
+  app.get('/external/youtube-info', async (request, reply) => {
+    const { url, vid } = request.query as { url?: string; vid?: string };
+    let extractedVid = vid;
+
+    if (!extractedVid && url) {
+      const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+      if (match) {
+        extractedVid = match[1];
+      }
+    }
+
+    if (!extractedVid || extractedVid.length !== 11) {
+      return reply.status(400).send({
+        success: false,
+        message: 'Invalid or missing YouTube URL or 11-char video ID (vid)'
+      });
+    }
+
+    return reply.send({
+      success: true,
+      vid: extractedVid,
+      thumbnailUrl: `https://i.ytimg.com/vi/${extractedVid}/hqdefault.jpg`,
+      frameThumbnailUrl: `https://i.ytimg.com/vi/${extractedVid}/hq2.jpg`,
+      embedUrl: `https://www.youtube-nocookie.com/embed/${extractedVid}`,
+      watchUrl: `https://www.youtube.com/watch?v=${extractedVid}`
+    });
+  });
+
+  // 5. Get video details by ID
   app.get('/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
     const video = await prisma.video.findUnique({

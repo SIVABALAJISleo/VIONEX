@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { INITIAL_SHORTS, ShortItem, formatNumber, getSubscriptions, toggleSubscription } from '@/lib/data';
 
-export default function ShortsPage() {
+function ShortsContent() {
   const searchParams = useSearchParams();
   const requestedId = searchParams.get('id');
 
@@ -482,5 +482,13 @@ export default function ShortsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ShortsPage() {
+  return (
+    <Suspense fallback={<div className="h-[calc(100vh-56px)] flex items-center justify-center bg-black text-white">Loading Shorts...</div>}>
+      <ShortsContent />
+    </Suspense>
   );
 }

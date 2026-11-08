@@ -375,7 +375,7 @@ function formatMessageBubbleTime(timestamp: string): string {
   return getDynamicTime();
 }
 
-function formatStatusTimeAgo(createdAt: number): string {
+function formatStatusTimeAgo(createdAt: number = Date.now()): string {
   const diffMs = Math.max(0, Date.now() - createdAt);
   const diffMin = Math.floor(diffMs / 60000);
   if (diffMin < 1) return 'Just now';
@@ -623,7 +623,7 @@ interface StatusStory {
   authorName: string;
   authorAvatar: string;
   isVerified: boolean;
-  createdAt: number;
+  createdAt?: number;
   timeAgo: string;
   slides: StatusSlide[];
   hasViewed: boolean;

@@ -227,22 +227,26 @@ export default function ChannelPage() {
         {/* Tab Content: Community */}
         {activeTab === 'community' && (
           <div className="max-w-2xl space-y-6">
-            {communityPosts.map((post) => (
+            {communityPosts.map((post) => {
+              const authorAvatar = post.author?.avatarUrl || post.authorAvatar;
+              const authorName = post.author?.name || post.authorName;
+              const options = post.pollOptions || post.poll?.options;
+              const totalVotes = post.pollTotalVotes || post.poll?.totalVotes || 1;
+              return (
               <div key={post.id} className="p-4 rounded-xl border border-[#E5E5E5] space-y-3 bg-white shadow-sm">
                 <div className="flex items-center gap-3">
-                  <img src={post.author.avatarUrl} alt={post.author.name} className="w-9 h-9 rounded-full object-cover" />
+                  <img src={authorAvatar} alt={authorName} className="w-9 h-9 rounded-full object-cover" />
                   <div>
-                    <h4 className="text-xs font-bold text-[#0F0F0F]">{post.author.name}</h4>
+                    <h4 className="text-xs font-bold text-[#0F0F0F]">{authorName}</h4>
                     <span className="text-[10px] text-[#606060]">{post.publishedAt}</span>
                   </div>
                 </div>
 
                 <p className="text-xs text-[#0F0F0F] leading-relaxed whitespace-pre-line">{post.content}</p>
 
-                {post.type === 'poll' && post.pollOptions && (
+                {options && options.length > 0 && (
                   <div className="space-y-2 pt-1">
-                    {post.pollOptions.map((opt) => {
-                      const totalVotes = post.pollTotalVotes || 1;
+                    {options.map((opt) => {
                       const percentage = Math.round((opt.votes / totalVotes) * 100);
                       return (
                         <button
@@ -265,7 +269,7 @@ export default function ChannelPage() {
                 <div className="flex items-center gap-4 pt-2 border-t border-[#F2F2F2] text-xs text-[#606060]">
                   <button className="flex items-center gap-1.5 hover:text-[#0F0F0F]">
                     <ThumbsUp className="w-4 h-4" />
-                    <span>{post.likesCount}</span>
+                    <span>{post.likesCount ?? post.likes}</span>
                   </button>
                   <button className="flex items-center gap-1.5 hover:text-[#0F0F0F]">
                     <MessageSquare className="w-4 h-4" />
@@ -273,7 +277,8 @@ export default function ChannelPage() {
                   </button>
                 </div>
               </div>
-            ))}
+            );
+          })}
           </div>
         )}
 

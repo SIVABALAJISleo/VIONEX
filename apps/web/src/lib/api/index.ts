@@ -190,13 +190,34 @@ export const historyApi = {
 
 // 9. SEARCH & DISCOVERY
 export const discoveryApi = {
-  async search(query: string, filter?: { type?: string; sort?: string }) {
+  async getHomeFeed() {
+    return api.get('/discovery/home');
+  },
+
+  async getTaxonomy() {
+    return api.get('/discovery/taxonomy');
+  },
+
+  async getTaxonomyByArea(areaId: string) {
+    return api.get(`/discovery/taxonomy/${areaId}`);
+  },
+
+  async getCommunityPicks(params?: { contentType?: string; level?: string; limit?: number }) {
+    const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
+    return api.get(`/discovery/community-picks${qs}`);
+  },
+
+  async getRelated(videoId: string) {
+    return api.get(`/discovery/related/${videoId}`);
+  },
+
+  async search(query: string, filter?: { areaId?: string; categoryId?: string; contentType?: string; level?: string; shelfLife?: string }) {
     const params = new URLSearchParams({ q: query, ...(filter as any) });
     return api.get(`/discovery/search?${params.toString()}`);
   },
 
   async getAutocomplete(prefix: string) {
-    return api.get(`/discovery/autocomplete?q=${encodeURIComponent(prefix)}`);
+    return api.get(`/discovery/search/suggest?q=${encodeURIComponent(prefix)}`);
   },
 
   async getTrending(category?: string) {

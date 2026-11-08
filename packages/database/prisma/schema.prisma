@@ -316,6 +316,23 @@ model Video {
   copyrightMatches CopyrightMatch[]
   reports         Report[]
   analyticsDaily  DailyVideoAnalytics[]
+  coRecommendationsSource CoRecommendation[] @relation("SourceVideo")
+  coRecommendationsTarget CoRecommendation[] @relation("TargetVideo")
+  communityEndorsements   CommunityEndorsement[]
+
+  // HackerTube Curation & Taxonomy Extensions
+  contentType        String?         @default("general")
+  level              String?         @default("general")
+  shelfLife          String?         @default("evergreen")
+  primaryTopic       String?
+  whyCommunity       String?
+  communityScore     Float           @default(0.0)
+  pullQuoteText      String?
+  pullQuoteAuthor    String?
+  pullQuoteYear      String?
+  externalVideoId    String?
+  taxonomyAreaId     String?
+  taxonomyCategoryId String?
 
   @@index([channelId])
   @@index([visibility, state])
@@ -1111,3 +1128,40 @@ model BusinessAgent {
 
   @@unique([businessId, userId])
 }
+
+// -------------------------------------------------------------
+// COMMUNITY CURATION & CO-RECOMMENDATION GRAPH MODELS
+// -------------------------------------------------------------
+
+model CoRecommendation {
+  id                 String   @id @default(uuid())
+  sourceVideoId      String
+  sourceVideo        Video    @relation("SourceVideo", fields: [sourceVideoId], references: [id], onDelete: Cascade)
+  targetVideoId      String
+  targetVideo        Video    @relation("TargetVideo", fields: [targetVideoId], references: [id], onDelete: Cascade)
+  sharedRecommenders Int      @default(1)
+  affinityScore      Float    @default(0.0)
+  createdAt          DateTime @default(now())
+
+  @@unique([sourceVideoId, targetVideoId])
+  @@index([sourceVideoId, affinityScore])
+}
+
+model CommunityEndorsement {
+  id             String   @id @default(uuid())
+  videoId        String
+  video          Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  sourcePlatform String   @default("COMMUNITY")
+  externalItemId String?
+  externalUrl    String?
+  author         String
+  stance         String   @default("rec")
+  why            String?
+  quote          String?
+  contextTitle   String?
+  month          String?
+  createdAt      DateTime @default(now())
+
+  @@index([videoId, stance])
+}
+

@@ -29,6 +29,70 @@ export type UserRole =
 
 export type ChannelMemberRole = 'OWNER' | 'MANAGER' | 'EDITOR' | 'MODERATOR' | 'ANALYST';
 
+// HackerTube Content & Curation Taxonomy Types
+export type ContentType =
+  | 'talk'
+  | 'lecture'
+  | 'course'
+  | 'documentary'
+  | 'explainer'
+  | 'interview'
+  | 'podcast'
+  | 'tutorial'
+  | 'demo'
+  | 'news'
+  | 'commentary'
+  | 'comedy'
+  | 'music'
+  | 'other'
+  | 'general';
+
+export type ContentLevel = 'general' | 'intro' | 'intermediate' | 'advanced';
+
+export type ShelfLife = 'evergreen' | 'dated' | 'news';
+
+export type RecommendationStance = 'strong_rec' | 'rec' | 'reference' | 'joke' | 'critical';
+
+export interface TaxonomyCategoryItem {
+  id: string;
+  name: string;
+  description: string;
+  areaId: string;
+  areaName: string;
+}
+
+export interface TaxonomyAreaItem {
+  id: string;
+  name: string;
+  categories: {
+    id: string;
+    name: string;
+    description: string;
+  }[];
+}
+
+export interface CommunityEndorsementDTO {
+  id: string;
+  videoId: string;
+  sourcePlatform: string;
+  author: string;
+  stance: RecommendationStance;
+  why?: string | null;
+  quote?: string | null;
+  contextTitle?: string | null;
+  month?: string | null;
+  createdAt: string;
+}
+
+export interface CoRecommendationDTO {
+  id: string;
+  sourceVideoId: string;
+  targetVideoId: string;
+  sharedRecommenders: number;
+  affinityScore: number;
+  targetVideo?: VideoDTO;
+}
+
 export interface UserDTO {
   id: string;
   email: string;
@@ -76,6 +140,22 @@ export interface VideoDTO {
   tags: string[];
   publishedAt?: string | null;
   createdAt: string;
+
+  // Curation, Taxonomy & Recommendation Extensions
+  contentType?: ContentType | string;
+  level?: ContentLevel | string;
+  shelfLife?: ShelfLife | string;
+  primaryTopic?: string | null;
+  whyCommunity?: string | null;
+  communityScore?: number;
+  pullQuote?: {
+    text: string;
+    author?: string;
+    year?: string;
+  } | null;
+  taxonomyAreaId?: string | null;
+  taxonomyCategoryId?: string | null;
+  externalVideoId?: string | null;
 }
 
 export interface CommentDTO {
@@ -100,7 +180,16 @@ export interface CommentDTO {
 export interface RecommendationCandidate {
   videoId: string;
   score: number;
-  reason: 'SUBSCRIBED_CHANNEL' | 'SIMILAR_TO_WATCHED' | 'TRENDING' | 'CONTINUE_WATCHING' | 'TOPIC_AFFINITY';
+  reason:
+  | 'SUBSCRIBED_CHANNEL'
+  | 'SIMILAR_TO_WATCHED'
+  | 'TRENDING'
+  | 'CONTINUE_WATCHING'
+  | 'TOPIC_AFFINITY'
+  | 'CO_RECOMMENDED'
+  | 'COMMUNITY_FAVORITE';
+  sharedRecommenders?: number;
+  whyCommunity?: string;
 }
 
 export interface TelemetryEvent {

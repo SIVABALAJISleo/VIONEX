@@ -67,7 +67,7 @@ async function bootstrap() {
   fastify.register(communicationRoutes, { prefix: '/api/v1/communication' });
 
   // Global Error Handler
-  fastify.setErrorHandler((error, request, reply) => {
+  fastify.setErrorHandler((error: any, request, reply) => {
     fastify.log.error(error);
     const statusCode = error.statusCode || 500;
     reply.status(statusCode).send({

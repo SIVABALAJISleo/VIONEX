@@ -7,6 +7,7 @@ export interface PollOption {
   id: string;
   text: string;
   votes: number;
+  isUserVote?: boolean;
 }
 
 export interface CommunityPost {
@@ -24,7 +25,16 @@ export interface CommunityPost {
     userVotedOptionId?: string;
   };
   likes: number;
+  likesCount?: number;
   commentsCount: number;
+  author?: {
+    name: string;
+    avatarUrl: string;
+    handle: string;
+  };
+  type?: string;
+  pollOptions?: { id: string; text: string; votes: number; isUserVote?: boolean }[];
+  pollTotalVotes?: number;
 }
 
 export const INITIAL_COMMUNITY_POSTS: CommunityPost[] = [

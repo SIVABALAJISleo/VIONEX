@@ -6,10 +6,11 @@ import {
   CheckCircle2,
   MoreVertical,
   Clock,
-  ListPlus,
   Share2,
   Check,
-  EyeOff
+  EyeOff,
+  Quote,
+  Sparkles
 } from 'lucide-react';
 import { toggleWatchLater, isWatchLater, formatNumber } from '@/lib/data';
 
@@ -27,6 +28,17 @@ export interface VideoCardProps {
   viewsCount: string | number;
   publishedAt?: string | null;
   isShort?: boolean;
+  contentType?: string | null;
+  level?: string | null;
+  shelfLife?: string | null;
+  whyCommunity?: string | null;
+  communityScore?: number | null;
+  pullQuote?: {
+    text: string;
+    author?: string;
+    year?: string;
+  } | null;
+  recommendationReason?: string | null;
 }
 
 function VideoCardComponent({
@@ -37,7 +49,14 @@ function VideoCardComponent({
   channel,
   viewsCount,
   publishedAt,
-  isShort = false
+  isShort = false,
+  contentType,
+  level,
+  shelfLife,
+  whyCommunity,
+  communityScore,
+  pullQuote,
+  recommendationReason
 }: VideoCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [inWatchLater, setInWatchLater] = useState(() => isWatchLater(id));
@@ -99,6 +118,33 @@ function VideoCardComponent({
               : 'linear-gradient(135deg, #E5E5E5 0%, #CCCCCC 100%)'
           }}
         />
+
+        {/* Content Type / Community Curation Badges */}
+        <div className="absolute top-1.5 left-1.5 flex flex-wrap gap-1 z-10">
+          {recommendationReason === 'COMMUNITY_FAVORITE' ? (
+            <span className="px-1.5 py-0.5 rounded bg-amber-500/95 text-[10px] font-bold text-white shadow-sm flex items-center gap-0.5">
+              <Sparkles className="w-2.5 h-2.5" />
+              TOP PICK
+            </span>
+          ) : recommendationReason === 'CO_RECOMMENDED' ? (
+            <span className="px-1.5 py-0.5 rounded bg-indigo-600/90 text-[10px] font-semibold text-white shadow-sm">
+              CO-RECOMMENDED
+            </span>
+          ) : null}
+
+          {contentType && contentType !== 'general' && (
+            <span className="px-1.5 py-0.5 rounded bg-black/75 text-[10px] font-semibold uppercase tracking-wider text-white">
+              {contentType}
+            </span>
+          )}
+
+          {level && level !== 'general' && (
+            <span className="px-1 py-0.5 rounded bg-black/60 text-[9px] font-medium uppercase text-white/90">
+              {level}
+            </span>
+          )}
+        </div>
+
         {duration > 0 ? (
           <span className="absolute bottom-1.5 right-1.5 px-1 py-0.5 rounded bg-black/85 text-[11px] font-medium text-white tracking-tight">
             {formatDuration(duration)}
@@ -140,6 +186,19 @@ function VideoCardComponent({
           <p className="text-xs text-[#606060] mt-0.5" suppressHydrationWarning>
             {typeof viewsCount === 'number' ? `${formatNumber(viewsCount)} views` : viewsCount} • {publishedAt || 'Recently'}
           </p>
+
+          {/* Social Proof Pull Quote or Community Reason */}
+          {whyCommunity ? (
+            <div className="mt-1.5 flex items-start gap-1 px-1.5 py-0.5 rounded bg-[#F8F9FA] border border-[#E9ECEF] text-[11px] text-[#495057] leading-snug">
+              <Quote className="w-2.5 h-2.5 text-[#D9480F] shrink-0 mt-0.5" />
+              <span className="line-clamp-1 italic text-[10.5px]">{whyCommunity}</span>
+            </div>
+          ) : pullQuote?.text ? (
+            <div className="mt-1.5 flex items-start gap-1 px-1.5 py-0.5 rounded bg-[#F8F9FA] border border-[#E9ECEF] text-[11px] text-[#495057] leading-snug">
+              <Quote className="w-2.5 h-2.5 text-[#065FD4] shrink-0 mt-0.5" />
+              <span className="line-clamp-1 italic text-[10.5px]">"{pullQuote.text}"</span>
+            </div>
+          ) : null}
         </div>
 
         {/* 3-Dots Menu Button */}
